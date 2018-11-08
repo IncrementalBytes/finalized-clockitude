@@ -1,4 +1,4 @@
-package net.frostedbytes.android.samanthacountdown;
+package net.frostedbytes.android.countdown;
 
 import org.junit.Test;
 

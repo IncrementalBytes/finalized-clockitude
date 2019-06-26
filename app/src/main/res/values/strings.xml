@@ -16,4 +16,10 @@
     <string name="hours_remaining">Hour(s) Remaining:</string>
     <string name="minutes_remaining">Minute(s) Remaining:</string>
     <string name="err_delete_event">Unable to delete event at this time.</string>
+    <string name="seconds_remaining">Second(s) remaining:</string>
+    <string name="time_of_event">(Optional) Time of Event:</string>
+    <string name="deactivate">Deactivate</string>
+    <string name="not_active">Not Active</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="err_add_event_summary">Could not add event, try again later.</string>
 </resources>

@@ -1,3 +1,18 @@
+/*
+ * Copyright 2019 Ryan Ward
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
 package net.frostedbytes.android.countdown.models;
 
 import android.os.Parcel;
@@ -5,92 +20,76 @@ import android.os.Parcelable;
 
 import com.google.firebase.database.Exclude;
 
-import java.util.HashMap;
-import java.util.Map;
+import net.frostedbytes.android.countdown.BaseActivity;
 
 public class EventSummary implements Parcelable {
 
-    public static final String ROOT = "Events";
+  public static final String ROOT = "EventSummaries";
 
-    public String EventDate;
+  public long EventDate;
 
-    @Exclude
-    public String EventId;
+  @Exclude
+  public String EventId;
 
-    public String EventName;
+  public String EventName;
 
-    public boolean IsActive;
+  public boolean IsActive;
 
-    public String UserId;
+  @Exclude
+  public String UserId;
 
-    public EventSummary() {
+  public EventSummary() {
 
-        this.EventDate = "";
-        this.EventId = "";
-        this.EventName = "";
-        this.IsActive = false;
-        this.UserId = "";
+    EventDate = 0;
+    EventId = BaseActivity.DEFAULT_EVENT_ID;
+    EventName = "";
+    IsActive = false;
+    UserId = BaseActivity.DEFAULT_USER_ID;
+  }
+
+  protected EventSummary(Parcel in) {
+
+    EventDate = in.readLong();
+    EventId = in.readString();
+    EventName = in.readString();
+    IsActive = in.readInt() != 0;
+    UserId = in.readString();
+  }
+
+  @Override
+  public int describeContents() {
+    return 0;
+  }
+
+  @Override
+  public boolean equals(Object other) {
+
+    if (other instanceof EventSummary) {
+      EventSummary otherEvent = (EventSummary) other;
+      return EventName.equals(otherEvent.EventName) && EventDate == otherEvent.EventDate;
     }
 
-    protected EventSummary(Parcel in) {
+    return false;
+  }
 
-        this.EventDate = in.readString();
-        this.EventId = in.readString();
-        this.EventName = in.readString();
-        this.IsActive = in.readInt() != 0;
-        this.UserId = in.readString();
+  @Override
+  public void writeToParcel(Parcel dest, int flags) {
+
+    dest.writeLong(EventDate);
+    dest.writeString(EventId);
+    dest.writeString(EventName);
+    dest.writeInt(IsActive ? 1 : 0);
+  }
+
+  public static final Creator<EventSummary> CREATOR = new Creator<EventSummary>() {
+    @Override
+    public EventSummary createFromParcel(Parcel in) {
+      return new EventSummary(in);
     }
 
     @Override
-    public int describeContents() {
-        return 0;
+    public EventSummary[] newArray(int size) {
+      return new EventSummary[size];
     }
-
-    @Override
-    public boolean equals(Object other) {
-
-        if (other instanceof EventSummary) {
-            EventSummary otherEvent = (EventSummary) other;
-            return this.EventName.equals(otherEvent.EventName) &&
-                this.EventDate.equals(otherEvent.EventDate);
-        }
-
-        return false;
-    }
-
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-
-        dest.writeString(this.EventDate);
-        dest.writeString(this.EventId);
-        dest.writeString(this.EventName);
-        dest.writeInt(this.IsActive ? 1 : 0);
-        dest.writeString(this.UserId);
-    }
-
-    /**
-     * Creates a mapped object based on values of this event summary object
-     * @return A mapped object of match summary
-     */
-    public Map<String, Object> toMap() {
-
-        HashMap<String, Object> result = new HashMap<>();
-        result.put("EventDate", this.EventDate);
-        result.put("EventName", this.EventName);
-        result.put("IsActive", this.IsActive);
-        result.put("UserId", this.UserId);
-        return result;
-    }
-
-    public static final Creator<EventSummary> CREATOR = new Creator<EventSummary>() {
-        @Override
-        public EventSummary createFromParcel(Parcel in) {
-            return new EventSummary(in);
-        }
-
-        @Override
-        public EventSummary[] newArray(int size) {
-            return new EventSummary[size];
-        }
-    };
+  };
 }

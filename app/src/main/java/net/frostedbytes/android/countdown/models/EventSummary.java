@@ -21,6 +21,10 @@ import android.os.Parcelable;
 import com.google.firebase.database.Exclude;
 
 import net.frostedbytes.android.countdown.BaseActivity;
+import net.frostedbytes.android.countdown.common.DateUtils;
+
+import java.util.Calendar;
+import java.util.Locale;
 
 public class EventSummary implements Parcelable {
 
@@ -33,8 +37,6 @@ public class EventSummary implements Parcelable {
 
   public String EventName;
 
-  public boolean IsActive;
-
   @Exclude
   public String UserId;
 
@@ -43,7 +45,6 @@ public class EventSummary implements Parcelable {
     EventDate = 0;
     EventId = BaseActivity.DEFAULT_EVENT_ID;
     EventName = "";
-    IsActive = false;
     UserId = BaseActivity.DEFAULT_USER_ID;
   }
 
@@ -52,7 +53,6 @@ public class EventSummary implements Parcelable {
     EventDate = in.readLong();
     EventId = in.readString();
     EventName = in.readString();
-    IsActive = in.readInt() != 0;
     UserId = in.readString();
   }
 
@@ -73,12 +73,20 @@ public class EventSummary implements Parcelable {
   }
 
   @Override
+  public String toString() {
+    return String.format(
+      Locale.US,
+      "EventSummary { Name=%s, %s }",
+      EventName,
+      EventDate < Calendar.getInstance().getTimeInMillis() ? "Completed!" : "Date=" + DateUtils.formatDateForDisplay(EventDate));
+  }
+
+  @Override
   public void writeToParcel(Parcel dest, int flags) {
 
     dest.writeLong(EventDate);
     dest.writeString(EventId);
     dest.writeString(EventName);
-    dest.writeInt(IsActive ? 1 : 0);
   }
 
   public static final Creator<EventSummary> CREATOR = new Creator<EventSummary>() {

@@ -7,7 +7,6 @@
     <string name="name_of_event">Name of Event:</string>
     <string name="date_of_event">Date of Event:</string>
     <string name="create">Create</string>
-    <string name="active">Active</string>
     <string name="no_events">Did not find any events.</string>
     <string name="menu_home">Home</string>
     <string name="menu_show_list">Show List</string>
@@ -18,8 +17,9 @@
     <string name="err_delete_event">Unable to delete event at this time.</string>
     <string name="seconds_remaining">Second(s) remaining:</string>
     <string name="time_of_event">(Optional) Time of Event:</string>
-    <string name="deactivate">Deactivate</string>
-    <string name="not_active">Not Active</string>
     <string name="dismiss">Dismiss</string>
     <string name="err_add_event_summary">Could not add event, try again later.</string>
+    <string name="completed">COMPLETED!</string>
+  <string name="default_time">12:00</string>
+  <string name="err_scheduler_failed">Could not start countdown clock, please try again later.</string>
 </resources>

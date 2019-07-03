@@ -23,25 +23,27 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
 import net.frostedbytes.android.countdown.BaseActivity;
 import net.frostedbytes.android.countdown.R;
+import net.frostedbytes.android.countdown.common.SortUtils;
 import net.frostedbytes.android.countdown.models.EventSummary;
 import net.frostedbytes.android.countdown.common.DateUtils;
 import net.frostedbytes.android.countdown.common.LogUtils;
+import net.frostedbytes.android.countdown.views.TouchableImageView;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 
-import static net.frostedbytes.android.countdown.BaseActivity.BASE_TAG;
-
 public class EventListFragment extends Fragment {
 
-  private static final String TAG = BASE_TAG + EventListFragment.class.getSimpleName();
+  private static final String TAG = BaseActivity.BASE_TAG + EventListFragment.class.getSimpleName();
 
   public interface OnEventListListener {
 
@@ -60,7 +62,7 @@ public class EventListFragment extends Fragment {
 
   public static EventListFragment newInstance(ArrayList<EventSummary> eventSummaries) {
 
-    LogUtils.debug(TAG, "++newInstance(ArrayList<EventSummary>)");
+    LogUtils.debug(TAG, "++newInstance(%d)", eventSummaries.size());
     EventListFragment fragment = new EventListFragment();
     Bundle args = new Bundle();
     args.putParcelableArrayList(BaseActivity.ARG_EVENT_SUMMARIES, eventSummaries);
@@ -78,7 +80,7 @@ public class EventListFragment extends Fragment {
     } catch (ClassCastException e) {
       throw new ClassCastException(
         // TODO: update with list of events
-        String.format(Locale.ENGLISH, "%s must implement TBD.", context.toString()));
+        String.format(Locale.US, "%s must implement TBD.", context.toString()));
     }
 
     Bundle arguments = getArguments();
@@ -101,6 +103,7 @@ public class EventListFragment extends Fragment {
 
     FloatingActionButton createButton = view.findViewById(R.id.event_list_button_create);
     if (mEventSummaries.size() > 0) {
+      mEventSummaries.sort(new SortUtils.ByEventDate());
       createButton.show();
       createButton.setOnClickListener(buttonView -> {
 
@@ -177,6 +180,7 @@ public class EventListFragment extends Fragment {
 
     private final TextView mEventTitleTextView;
     private final TextView mEventDateTextView;
+    private final TouchableImageView mDeleteEventImageView;
 
     private EventSummary mEventSummary;
 
@@ -186,13 +190,31 @@ public class EventListFragment extends Fragment {
       itemView.setOnClickListener(this);
       mEventTitleTextView = itemView.findViewById(R.id.event_item_text_title);
       mEventDateTextView = itemView.findViewById(R.id.event_item_text_date);
+      mDeleteEventImageView = itemView.findViewById(R.id.event_item_delete);
+      mDeleteEventImageView.setOnTouchListener((view, motionEvent) -> {
+
+        switch (motionEvent.getAction()) {
+          case MotionEvent.ACTION_DOWN:
+            mCallback.onDeleteEvent(mEventSummary);
+            break;
+          case MotionEvent.ACTION_UP:
+            view.performClick();
+            return true;
+        }
+
+        return true;
+      });
     }
 
     void bind(EventSummary eventSummary) {
 
       mEventSummary = eventSummary;
       mEventTitleTextView.setText(mEventSummary.EventName);
-      mEventDateTextView.setText(DateUtils.formatDateForDisplay(mEventSummary.EventDate));
+      if (mEventSummary.EventDate < Calendar.getInstance().getTimeInMillis()) {
+        mEventDateTextView.setText(getString(R.string.completed));
+      } else {
+        mEventDateTextView.setText(DateUtils.formatDateForDisplay(mEventSummary.EventDate));
+      }
     }
 
     @Override

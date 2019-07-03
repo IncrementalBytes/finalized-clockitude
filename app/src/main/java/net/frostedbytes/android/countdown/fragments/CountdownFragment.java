@@ -27,6 +27,7 @@ import android.widget.TextView;
 
 import net.frostedbytes.android.countdown.BaseActivity;
 import net.frostedbytes.android.countdown.R;
+import net.frostedbytes.android.countdown.common.DateUtils;
 import net.frostedbytes.android.countdown.models.EventSummary;
 import net.frostedbytes.android.countdown.common.LogUtils;
 
@@ -42,15 +43,20 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static net.frostedbytes.android.countdown.BaseActivity.BASE_TAG;
-
 public class CountdownFragment extends Fragment {
 
-  private static final String TAG = BASE_TAG + CountdownFragment.class.getSimpleName();
+  private static final String TAG = BaseActivity.BASE_TAG + CountdownFragment.class.getSimpleName();
 
   private static DateTimeFormatter mFormatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
     .withLocale(Locale.US)
     .withZone(ZoneId.systemDefault());
+
+  public interface OnCountdownListener {
+
+    void onSchedulerFailed();
+  }
+
+  private OnCountdownListener mCallback;
 
   private Instant mEventInstant;
   private EventSummary mEventSummary;
@@ -76,6 +82,14 @@ public class CountdownFragment extends Fragment {
     super.onAttach(context);
 
     LogUtils.debug(TAG, "++onAttach(Context)");
+    try {
+      mCallback = (OnCountdownListener) context;
+    } catch (ClassCastException e) {
+      throw new ClassCastException(
+        // TODO: update with list of events
+        String.format(Locale.US, "%s must implement TBD.", context.toString()));
+    }
+
     Bundle arguments = getArguments();
     if (arguments != null) {
       mEventSummary = arguments.getParcelable(BaseActivity.ARG_EVENT_SUMMARY);
@@ -99,19 +113,19 @@ public class CountdownFragment extends Fragment {
     title.setText(mEventSummary.EventName);
 
     TextView daysHeader = view.findViewById(R.id.countdown_text_days);
-    daysHeader.setText(String.format(Locale.ENGLISH, "Day(s) until %s", mEventSummary.EventDate));
+    daysHeader.setText(String.format(Locale.US, "Day(s) until %s", DateUtils.formatDateForDisplay(mEventSummary.EventDate)));
     mDaysEdit = view.findViewById(R.id.countdown_edit_days);
 
     TextView hoursHeader = view.findViewById(R.id.countdown_text_hours);
-    hoursHeader.setText(String.format(Locale.ENGLISH, "Hour(s) until %s", mEventSummary.EventDate));
+    hoursHeader.setText(String.format(Locale.US, "Hour(s) until %s", DateUtils.formatDateForDisplay(mEventSummary.EventDate)));
     mHoursEdit = view.findViewById(R.id.countdown_edit_hours);
 
     TextView minutesHeader = view.findViewById(R.id.countdown_text_minutes);
-    minutesHeader.setText(String.format(Locale.ENGLISH, "Minute(s) until %s", mEventSummary.EventDate));
+    minutesHeader.setText(String.format(Locale.US, "Minute(s) until %s", DateUtils.formatDateForDisplay(mEventSummary.EventDate)));
     mMinutesEdit = view.findViewById(R.id.countdown_edit_minutes);
 
     TextView secondsHeader = view.findViewById(R.id.countdown_text_seconds);
-    secondsHeader.setText(String.format(Locale.ENGLISH, "Second(s) until %s", mEventSummary.EventDate));
+    secondsHeader.setText(String.format(Locale.US, "Second(s) until %s", DateUtils.formatDateForDisplay(mEventSummary.EventDate)));
     mSecondsEdit = view.findViewById(R.id.countdown_edit_seconds);
 
     updateUI();
@@ -127,7 +141,11 @@ public class CountdownFragment extends Fragment {
         public void run() {
 
           try {
-            getActivity().runOnUiThread(update);
+            if (getActivity() != null) {
+              getActivity().runOnUiThread(update);
+            } else {
+              mCallback.onSchedulerFailed();
+            }
           } catch (Exception ex) {
             LogUtils.warn(TAG, "Exception when scheduling thread: %s", ex.getMessage());
           }
@@ -163,9 +181,9 @@ public class CountdownFragment extends Fragment {
 
     LogUtils.debug(TAG, "++updateUI()");
     Duration duration = Duration.between(Instant.now(), mEventInstant);
-    mDaysEdit.setText(String.format(Locale.ENGLISH, "%,d", duration.toDays()));
-    mHoursEdit.setText(String.format(Locale.ENGLISH, "%,d", duration.toHours()));
-    mMinutesEdit.setText(String.format(Locale.ENGLISH, "%,d", duration.toMinutes()));
-    mSecondsEdit.setText(String.format(Locale.ENGLISH, "%,d", duration.toMillis() / 1000));
+    mDaysEdit.setText(String.format(Locale.US, "%,d", duration.toDays()));
+    mHoursEdit.setText(String.format(Locale.US, "%,d", duration.toHours()));
+    mMinutesEdit.setText(String.format(Locale.US, "%,d", duration.toMinutes()));
+    mSecondsEdit.setText(String.format(Locale.US, "%,d", duration.toMillis() / 1000));
   }
 }

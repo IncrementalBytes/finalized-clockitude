@@ -19,7 +19,6 @@ import com.google.android.material.snackbar.Snackbar;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import android.os.Bundle;
@@ -46,22 +45,34 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import static net.frostedbytes.android.countdown.BaseActivity.BASE_TAG;
-import static net.frostedbytes.android.countdown.BaseActivity.DEFAULT_EVENT_ID;
-
-public class MainActivity extends AppCompatActivity implements
+public class MainActivity extends BaseActivity implements
   EventListFragment.OnEventListListener,
+  CountdownFragment.OnCountdownListener,
   CreateEventFragment.OnCreateEventListener {
 
-  private static final String TAG = BASE_TAG + MainActivity.class.getSimpleName();
+  private static final String TAG = BaseActivity.BASE_TAG + MainActivity.class.getSimpleName();
 
   private Snackbar mSnackbar;
 
   private Map<String, EventSummary> mEventSummaries;
   private User mUser;
 
+  /*
+    Public View Override(s)
+   */
   @Override
-  protected void onCreate(Bundle savedInstanceState) {
+  public void onBackPressed() {
+
+    LogUtils.debug(TAG, "++onBackPressed()");
+    if (getSupportFragmentManager().getBackStackEntryCount() == 1) {
+      finish();
+    } else {
+      super.onBackPressed();
+    }
+  }
+
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
     LogUtils.debug(TAG, "++onCreate(Bundle)");
@@ -103,14 +114,10 @@ public class MainActivity extends AppCompatActivity implements
   public boolean onOptionsItemSelected(MenuItem item) {
 
     LogUtils.debug(TAG, "++onOptionsItemSelected(MenuItem)");
-    // Handle action bar
-    // item clicks here. The action bar will
-    // automatically handle clicks on the Home/Up button, so long
-    // as you specify a parent activity in AndroidManifest.xml.
     switch (item.getItemId()) {
       case R.id.action_home:
       case R.id.action_list:
-        getEventList();
+        replaceFragment(EventListFragment.newInstance(new ArrayList<>(mEventSummaries.values())));
         break;
       case R.id.action_create:
         replaceFragment(CreateEventFragment.newInstance(new ArrayList<>(mEventSummaries.values())));
@@ -120,6 +127,9 @@ public class MainActivity extends AppCompatActivity implements
     return super.onOptionsItemSelected(item);
   }
 
+  /*
+    Fragment Callback Override(s)
+   */
   @Override
   public void onCreateEvent() {
 
@@ -131,9 +141,13 @@ public class MainActivity extends AppCompatActivity implements
   public void onDeleteEvent(EventSummary eventSummary) {
 
     LogUtils.debug(TAG, "++onDeleteEvent(EventSummary)");
-    FirebaseFirestore db = FirebaseFirestore.getInstance();
-    db.collection(EventSummary.ROOT).document(eventSummary.EventId).delete()
-      .addOnSuccessListener(aVoid -> LogUtils.debug(TAG, "Deleted event: %s", eventSummary.EventId))
+    mEventSummaries.remove(eventSummary.EventId);
+    String queryPath = PathUtils.combine(User.ROOT, mUser.Id, EventSummary.ROOT);
+    FirebaseFirestore.getInstance().collection(queryPath).document(eventSummary.EventId).delete()
+      .addOnSuccessListener(aVoid -> {
+        LogUtils.debug(TAG, "Deleted event: %s", eventSummary.EventId);
+        replaceFragment(EventListFragment.newInstance(new ArrayList<>(mEventSummaries.values())));
+      })
       .addOnFailureListener(e -> {
         LogUtils.error(TAG, "Could not delete event: %s; %s", eventSummary.EventId, e.getMessage());
         Snackbar.make(
@@ -151,23 +165,32 @@ public class MainActivity extends AppCompatActivity implements
   }
 
   @Override
+  public void onSchedulerFailed() {
+
+    LogUtils.debug(TAG, "++onSchedulerFailed()");
+    Snackbar.make(
+      findViewById(R.id.main_fragment_container),
+      getString(R.string.err_scheduler_failed),
+      Snackbar.LENGTH_LONG).show();
+  }
+
+  @Override
   public void onEventCreated(EventSummary eventSummary) {
 
-    LogUtils.debug(TAG, "++onEventCreated(EventSummary)");
+    LogUtils.debug(TAG, "++onEventCreated(%s)", eventSummary.toString());
     if (eventSummary.EventId == null || eventSummary.EventId.isEmpty() || eventSummary.EventId.equals(BaseActivity.DEFAULT_EVENT_ID)) {
       eventSummary.EventId = UUID.randomUUID().toString();
     }
 
     eventSummary.UserId = mUser.Id;
+    mEventSummaries.put(eventSummary.EventId, eventSummary);
     String queryPath = PathUtils.combine(User.ROOT, mUser.Id, EventSummary.ROOT, eventSummary.EventId);
     Trace eventSummaryTrace = FirebasePerformance.getInstance().newTrace("set_event_summary");
     eventSummaryTrace.start();
     FirebaseFirestore.getInstance().document(queryPath).set(eventSummary, SetOptions.merge()).addOnCompleteListener(task -> {
 
       if (task.isSuccessful()) {
-        mEventSummaries.put(eventSummary.EventId, eventSummary);
-        replaceFragment(
-          EventListFragment.newInstance(new ArrayList<>(mEventSummaries.values())));
+        replaceFragment(EventListFragment.newInstance(new ArrayList<>(mEventSummaries.values())));
         eventSummaryTrace.incrementMetric("event_summary_add", 1);
       } else {
         eventSummaryTrace.incrementMetric("event_summary_err", 1);
@@ -178,6 +201,9 @@ public class MainActivity extends AppCompatActivity implements
     });
   }
 
+  /*
+    Private Method(s)
+   */
   private void getEventList() {
 
     mEventSummaries = new HashMap<>();
@@ -186,7 +212,6 @@ public class MainActivity extends AppCompatActivity implements
     db.collection(queryPath).get().addOnCompleteListener(task -> {
 
       if (task.isSuccessful()) {
-        EventSummary active = null;
         QuerySnapshot querySnapshot = task.getResult();
         if (querySnapshot != null) {
           for (DocumentSnapshot snapshot : task.getResult().getDocuments()) {
@@ -232,15 +257,16 @@ public class MainActivity extends AppCompatActivity implements
   private void replaceFragment(Fragment fragment) {
 
     LogUtils.debug(TAG, "++replaceFragment(Fragment)");
-    String backStateName = fragment.getClass().getName();
     FragmentManager fragmentManager = getSupportFragmentManager();
-    boolean fragmentPopped = fragmentManager.popBackStackImmediate(backStateName, 0);
-    if (!fragmentPopped) { //fragment not in back stack, create it.
-      FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-      fragmentTransaction.replace(R.id.main_fragment_container, fragment);
-      fragmentTransaction.addToBackStack(backStateName);
-      fragmentTransaction.commit();
+    FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+    fragmentTransaction.replace(R.id.main_fragment_container, fragment);
+    if (fragment.getClass().getName().equals(EventListFragment.class.getName())) {
+      fragmentManager.popBackStackImmediate(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
     }
+
+    fragmentTransaction.addToBackStack(fragment.getClass().getName());
+    LogUtils.debug(TAG, "Back stack count: %d", fragmentManager.getBackStackEntryCount());
+    fragmentTransaction.commitAllowingStateLoss();
   }
 
   private void showDismissableSnackbar(String message) {

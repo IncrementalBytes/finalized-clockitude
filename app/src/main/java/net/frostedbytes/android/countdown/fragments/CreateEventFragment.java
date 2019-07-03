@@ -31,17 +31,13 @@ import net.frostedbytes.android.countdown.R;
 import net.frostedbytes.android.countdown.models.EventSummary;
 import net.frostedbytes.android.countdown.common.LogUtils;
 
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Locale;
-import java.util.TimeZone;
-
-import static net.frostedbytes.android.countdown.BaseActivity.BASE_TAG;
 
 public class CreateEventFragment extends Fragment {
 
-  private static final String TAG = BASE_TAG + CreateEventFragment.class.getSimpleName();
+  private static final String TAG = BaseActivity.BASE_TAG + CreateEventFragment.class.getSimpleName();
 
   public interface OnCreateEventListener {
 
@@ -77,7 +73,7 @@ public class CreateEventFragment extends Fragment {
     } catch (ClassCastException e) {
       throw new ClassCastException(
         // TODO: update with list of events
-        String.format(Locale.ENGLISH, "%s must implement TBD.", context.toString()));
+        String.format(Locale.US, "%s must implement TBD.", context.toString()));
     }
 
     Bundle arguments = getArguments();
@@ -103,7 +99,7 @@ public class CreateEventFragment extends Fragment {
     calendarView.setOnDateChangeListener((view1, year, month, dayOfMonth) -> {
 
       mDay = dayOfMonth;
-      mMonth = month + 1; // note: month value is based on 0-11
+      mMonth = month; // note: month value is based on 0-11
       mYear = year;
     });
 
@@ -113,9 +109,9 @@ public class CreateEventFragment extends Fragment {
       if (mCallback != null) {
         EventSummary eventSummary = new EventSummary();
         eventSummary.EventName = mNameEditView.getText().toString();
-        Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
-        calendar.set(mYear, mMonth, mDay);
-        eventSummary.EventDate = calendar.getTimeInMillis();
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(mYear, mMonth, mDay, 12, 0, 0); // TODO: replace with given time
+        eventSummary.EventDate = calendar.getTimeInMillis(); // note: saved timestamp in GMT zone
 
         // make sure we didn't create a similar event
         boolean found = false;

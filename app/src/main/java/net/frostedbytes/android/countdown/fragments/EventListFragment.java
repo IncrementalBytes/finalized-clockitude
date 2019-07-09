@@ -51,6 +51,8 @@ public class EventListFragment extends Fragment {
 
     void onDeleteEvent(EventSummary eventSummary);
 
+    void onPopulated(int size);
+
     void onSelected(EventSummary eventSummary);
   }
 
@@ -104,16 +106,15 @@ public class EventListFragment extends Fragment {
     FloatingActionButton createButton = view.findViewById(R.id.event_list_button_create);
     if (mEventSummaries.size() > 0) {
       mEventSummaries.sort(new SortUtils.ByEventDate());
-      createButton.show();
-      createButton.setOnClickListener(buttonView -> {
-
-        if (mCallback != null) {
-          mCallback.onCreateEvent();
-        }
-      });
-    } else {
-      createButton.hide();
     }
+
+    createButton.show();
+    createButton.setOnClickListener(buttonView -> {
+
+      if (mCallback != null) {
+        mCallback.onCreateEvent();
+      }
+    });
 
     updateUI();
     return view;
@@ -143,6 +144,9 @@ public class EventListFragment extends Fragment {
       EventSummaryAdapter eventAdapter = new EventSummaryAdapter(mEventSummaries);
       mRecyclerView.setAdapter(eventAdapter);
       eventAdapter.notifyDataSetChanged();
+      mCallback.onPopulated(mEventSummaries.size());
+    } else {
+      mCallback.onPopulated(0);
     }
   }
 

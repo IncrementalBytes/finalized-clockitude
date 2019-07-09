@@ -23,6 +23,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import net.frostedbytes.android.countdown.BaseActivity;
@@ -31,25 +32,20 @@ import net.frostedbytes.android.countdown.common.DateUtils;
 import net.frostedbytes.android.countdown.models.EventSummary;
 import net.frostedbytes.android.countdown.common.LogUtils;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Locale;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.joda.time.Interval;
+import org.joda.time.Period;
+
 public class CountdownFragment extends Fragment {
 
   private static final String TAG = BaseActivity.BASE_TAG + CountdownFragment.class.getSimpleName();
-
-  private static DateTimeFormatter mFormatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
-    .withLocale(Locale.US)
-    .withZone(ZoneId.systemDefault());
 
   public interface OnCountdownListener {
 
@@ -58,14 +54,11 @@ public class CountdownFragment extends Fragment {
 
   private OnCountdownListener mCallback;
 
-  private Instant mEventInstant;
   private EventSummary mEventSummary;
   private ScheduledExecutorService mScheduler;
 
-  private EditText mDaysEdit;
-  private EditText mHoursEdit;
-  private EditText mMinutesEdit;
-  private EditText mSecondsEdit;
+  private ProgressBar mProgress;
+  private EditText mRemainingEdit;
 
   public static CountdownFragment newInstance(EventSummary eventSummary) {
 
@@ -86,7 +79,6 @@ public class CountdownFragment extends Fragment {
       mCallback = (OnCountdownListener) context;
     } catch (ClassCastException e) {
       throw new ClassCastException(
-        // TODO: update with list of events
         String.format(Locale.US, "%s must implement TBD.", context.toString()));
     }
 
@@ -104,29 +96,16 @@ public class CountdownFragment extends Fragment {
     LogUtils.debug(TAG, "++onCreateView(LayoutInflater, ViewGroup, Bundle)");
     final View view = inflater.inflate(R.layout.fragment_countdown, container, false);
 
-    LocalDate localDate = Instant.ofEpochMilli(mEventSummary.EventDate).atZone(ZoneId.systemDefault()).toLocalDate();
-    mEventInstant = localDate.atStartOfDay().toInstant(ZoneOffset.UTC);
-    LogUtils.debug(TAG, "Event: %s", mFormatter.format(mEventInstant));
-    mEventInstant = mEventInstant.plus(Duration.ofDays(1));
-
     TextView title = view.findViewById(R.id.countdown_text_title);
     title.setText(mEventSummary.EventName);
+    TextView date = view.findViewById(R.id.countdown_text_date);
+    date.setText(DateUtils.formatDateForDisplay(mEventSummary.EventDate));
 
-    TextView daysHeader = view.findViewById(R.id.countdown_text_days);
-    daysHeader.setText(String.format(Locale.US, "Day(s) until %s", DateUtils.formatDateForDisplay(mEventSummary.EventDate)));
-    mDaysEdit = view.findViewById(R.id.countdown_edit_days);
+    mProgress = view.findViewById(R.id.countdown_progress);
+    mRemainingEdit = view.findViewById(R.id.countdown_edit_remaining);
 
-    TextView hoursHeader = view.findViewById(R.id.countdown_text_hours);
-    hoursHeader.setText(String.format(Locale.US, "Hour(s) until %s", DateUtils.formatDateForDisplay(mEventSummary.EventDate)));
-    mHoursEdit = view.findViewById(R.id.countdown_edit_hours);
-
-    TextView minutesHeader = view.findViewById(R.id.countdown_text_minutes);
-    minutesHeader.setText(String.format(Locale.US, "Minute(s) until %s", DateUtils.formatDateForDisplay(mEventSummary.EventDate)));
-    mMinutesEdit = view.findViewById(R.id.countdown_edit_minutes);
-
-    TextView secondsHeader = view.findViewById(R.id.countdown_text_seconds);
-    secondsHeader.setText(String.format(Locale.US, "Second(s) until %s", DateUtils.formatDateForDisplay(mEventSummary.EventDate)));
-    mSecondsEdit = view.findViewById(R.id.countdown_edit_seconds);
+    mProgress.setMax(100);
+    mProgress.setMin(0);
 
     updateUI();
 
@@ -166,6 +145,7 @@ public class CountdownFragment extends Fragment {
     if (mScheduler != null) {
       mScheduler.shutdown();
       mScheduler = null;
+      LogUtils.debug(TAG, "Scheduler shutdown!");
     }
   }
 
@@ -180,10 +160,62 @@ public class CountdownFragment extends Fragment {
   private void updateUI() {
 
     LogUtils.debug(TAG, "++updateUI()");
-    Duration duration = Duration.between(Instant.now(), mEventInstant);
-    mDaysEdit.setText(String.format(Locale.US, "%,d", duration.toDays()));
-    mHoursEdit.setText(String.format(Locale.US, "%,d", duration.toHours()));
-    mMinutesEdit.setText(String.format(Locale.US, "%,d", duration.toMinutes()));
-    mSecondsEdit.setText(String.format(Locale.US, "%,d", duration.toMillis() / 1000));
+
+    SimpleDateFormat simpleDateFormat = new SimpleDateFormat(getString(R.string.date_format), Locale.US);
+    Calendar calendar = Calendar.getInstance();
+    calendar.setTimeInMillis(mEventSummary.EventDate);
+    try {
+      Date startDate = simpleDateFormat.parse(calendar.getTime().toString());
+      Date currentDate = simpleDateFormat.parse(Calendar.getInstance().getTime().toString());
+      if (currentDate.getTime() < startDate.getTime()) {
+        Interval interval = new Interval(currentDate.getTime(), startDate.getTime());
+        Period period = interval.toPeriod();
+
+        // construct format for remaining time
+        String format = "";
+        if (period.getYears() > 0) {
+          format = String.format(Locale.US, "%d Year(s)", period.getYears());
+        }
+
+        if (period.getMonths() > 0) {
+          format = String.format(Locale.US, "%s %d Month(s)", format, period.getDays());
+        }
+
+        if (period.getDays() > 0) {
+          format = String.format(Locale.US, "%s %d Day(s)", format, period.getDays());
+        }
+
+        if (format.isEmpty()) {
+          format = String.format(Locale.US, "%02d:%02d:%02d", period.getHours(), period.getMinutes(), period.getSeconds());
+        } else {
+          format = String.format(Locale.US, "%s and %02d:%02d:%02d", format, period.getHours(), period.getMinutes(), period.getSeconds());
+        }
+
+        mRemainingEdit.setText(format);
+
+        LogUtils.debug(
+          TAG,
+          "Created: %d Now: %d Complete: %d",
+          mEventSummary.CreatedDate,
+          Calendar.getInstance().getTimeInMillis(),
+          mEventSummary.EventDate);
+        long difference = mEventSummary.EventDate - mEventSummary.CreatedDate;
+        long elapsed = Calendar.getInstance().getTimeInMillis() - mEventSummary.CreatedDate;
+        int percent = (int) (elapsed * 100 / difference);
+        LogUtils.debug(TAG, "Difference: %d Elapsed: %d Percentage Complete: %d", difference, elapsed, percent);
+        mProgress.setProgress(percent, false);
+      } else {
+        if (mScheduler != null) {
+          mScheduler.shutdown();
+          mScheduler = null;
+          LogUtils.debug(TAG, "Scheduler shutdown!");
+        }
+
+        mRemainingEdit.setText(getString(R.string.completed));
+      }
+    } catch (Exception pe) {
+      LogUtils.warn(TAG, pe.getMessage());
+      mRemainingEdit.setText(getString(R.string.unknown));
+    }
   }
 }

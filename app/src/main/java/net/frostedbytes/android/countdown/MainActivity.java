@@ -40,9 +40,13 @@ import net.frostedbytes.android.countdown.models.EventSummary;
 import net.frostedbytes.android.countdown.models.User;
 import net.frostedbytes.android.countdown.common.LogUtils;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.UUID;
 
 public class MainActivity extends BaseActivity implements
@@ -85,6 +89,17 @@ public class MainActivity extends BaseActivity implements
     mUser.Id = getIntent().getStringExtra(BaseActivity.ARG_FIREBASE_USER_ID);
     mUser.Email = getIntent().getStringExtra(BaseActivity.ARG_EMAIL);
     mUser.FullName = getIntent().getStringExtra(BaseActivity.ARG_USER_NAME);
+
+    TimeZone timeZone = TimeZone.getTimeZone("UTC");
+    Calendar calendar = Calendar.getInstance(timeZone);
+    SimpleDateFormat simpleDateFormat =
+      new SimpleDateFormat("EE MMM dd HH:mm:ss zzz yyyy", Locale.US);
+    simpleDateFormat.setTimeZone(timeZone);
+
+    LogUtils.debug(TAG, "Time zone: " + timeZone.getID());
+    LogUtils.debug(TAG, "default time zone: " + TimeZone.getDefault().getID());
+    LogUtils.debug(TAG, "UTC:     " + simpleDateFormat.format(calendar.getTime()));
+    LogUtils.debug(TAG, "Default: " + calendar.getTime() + " (" + calendar.getTimeInMillis() + ")");
 
     // look for user events to list
     if (mUser.Id == null || mUser.Id.isEmpty() || mUser.Id.equals(BaseActivity.DEFAULT_USER_ID)) {
@@ -155,6 +170,13 @@ public class MainActivity extends BaseActivity implements
           getString(R.string.err_delete_event),
           Snackbar.LENGTH_LONG).show();
       });
+  }
+
+  @Override
+  public void onPopulated(int size) {
+
+    LogUtils.debug(TAG, "++onPopulated(%d)", size);
+
   }
 
   @Override

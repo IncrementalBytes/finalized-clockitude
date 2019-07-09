@@ -30,6 +30,8 @@ public class EventSummary implements Parcelable {
 
   public static final String ROOT = "EventSummaries";
 
+  public long CreatedDate;
+
   public long EventDate;
 
   @Exclude
@@ -42,6 +44,7 @@ public class EventSummary implements Parcelable {
 
   public EventSummary() {
 
+    CreatedDate = 0;
     EventDate = 0;
     EventId = BaseActivity.DEFAULT_EVENT_ID;
     EventName = "";
@@ -50,6 +53,7 @@ public class EventSummary implements Parcelable {
 
   protected EventSummary(Parcel in) {
 
+    CreatedDate = in.readLong();
     EventDate = in.readLong();
     EventId = in.readString();
     EventName = in.readString();
@@ -84,6 +88,7 @@ public class EventSummary implements Parcelable {
   @Override
   public void writeToParcel(Parcel dest, int flags) {
 
+    dest.writeLong(CreatedDate);
     dest.writeLong(EventDate);
     dest.writeString(EventId);
     dest.writeString(EventName);

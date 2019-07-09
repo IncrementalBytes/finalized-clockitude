@@ -110,8 +110,10 @@ public class CreateEventFragment extends Fragment {
         EventSummary eventSummary = new EventSummary();
         eventSummary.EventName = mNameEditView.getText().toString();
         Calendar calendar = Calendar.getInstance();
-        calendar.set(mYear, mMonth, mDay, 12, 0, 0); // TODO: replace with given time
-        eventSummary.EventDate = calendar.getTimeInMillis(); // note: saved timestamp in GMT zone
+        eventSummary.CreatedDate = calendar.getTimeInMillis();
+        calendar.set(mYear, mMonth, mDay, 0, 0, 0); // TODO: replace with given time
+        eventSummary.EventDate = calendar.getTimeInMillis();
+        LogUtils.debug(TAG, "EventDate: " + calendar.getTime() + " (" + calendar.getTimeInMillis() + ")");
 
         // make sure we didn't create a similar event
         boolean found = false;

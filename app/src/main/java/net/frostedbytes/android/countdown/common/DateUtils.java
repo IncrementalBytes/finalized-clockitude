@@ -18,23 +18,15 @@ package net.frostedbytes.android.countdown.common;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
-import java.util.TimeZone;
 
 public class DateUtils {
 
   public static String formatDateForDisplay(long date) {
 
     // note: month value is based on 0-11
-    TimeZone timeZone = TimeZone.getTimeZone("UTC");
-    Calendar calendar = Calendar.getInstance(timeZone);
-    SimpleDateFormat simpleDateFormat =
-      new SimpleDateFormat("EE MMM dd HH:mm:ss zzz yyyy", Locale.US);
-    simpleDateFormat.setTimeZone(timeZone);
+    Calendar calendar = Calendar.getInstance();
     calendar.setTimeInMillis(date);
-
-    return String.format(
-      Locale.US,
-      "%s",
-      calendar.getTime());
+    SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MMM dd yyyy @ HH:mm:ss", Locale.US);
+    return simpleDateFormat.format(calendar.getTime());
   }
 }

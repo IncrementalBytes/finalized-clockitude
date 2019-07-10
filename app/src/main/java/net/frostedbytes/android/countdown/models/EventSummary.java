@@ -18,7 +18,8 @@ package net.frostedbytes.android.countdown.models;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import com.google.firebase.database.Exclude;
+import com.google.firebase.firestore.Exclude;
+import com.google.firebase.firestore.IgnoreExtraProperties;
 
 import net.frostedbytes.android.countdown.BaseActivity;
 import net.frostedbytes.android.countdown.common.DateUtils;
@@ -26,6 +27,7 @@ import net.frostedbytes.android.countdown.common.DateUtils;
 import java.util.Calendar;
 import java.util.Locale;
 
+@IgnoreExtraProperties
 public class EventSummary implements Parcelable {
 
   public static final String ROOT = "EventSummaries";
@@ -58,6 +60,14 @@ public class EventSummary implements Parcelable {
     EventId = in.readString();
     EventName = in.readString();
     UserId = in.readString();
+  }
+
+  @Exclude
+  public int getPercentRemaining() {
+
+    long difference = EventDate - CreatedDate;
+    long elapsed = Calendar.getInstance().getTimeInMillis() - CreatedDate;
+    return (int) (elapsed * 100 / difference);
   }
 
   @Override

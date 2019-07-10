@@ -58,7 +58,8 @@ public class CountdownFragment extends Fragment {
   private ScheduledExecutorService mScheduler;
 
   private ProgressBar mProgress;
-  private EditText mRemainingEdit;
+  private EditText mRemainingDaysEdit;
+  private EditText mRemainingTimeEdit;
 
   public static CountdownFragment newInstance(EventSummary eventSummary) {
 
@@ -102,16 +103,20 @@ public class CountdownFragment extends Fragment {
     date.setText(DateUtils.formatDateForDisplay(mEventSummary.EventDate));
 
     mProgress = view.findViewById(R.id.countdown_progress);
-    mRemainingEdit = view.findViewById(R.id.countdown_edit_remaining);
+    mRemainingDaysEdit = view.findViewById(R.id.countdown_edit_remaining_days);
+    mRemainingTimeEdit = view.findViewById(R.id.countdown_edit_remaining_time);
 
     mProgress.setMax(100);
     mProgress.setMin(0);
 
-    updateUI();
-
     mScheduler = Executors.newScheduledThreadPool(1);
 
-    // TODO: when under 1 day, use seconds
+    int taskScheduled = 60; // update every minute
+    long oneDay = 1000 * 60 * 60 * 24;
+    if ((mEventSummary.EventDate - Calendar.getInstance().getTimeInMillis()) < oneDay) {
+      taskScheduled = 1; // update every second
+    }
+
     mScheduler.scheduleAtFixedRate(
       new Runnable() {
         private Runnable update = () -> updateUI();
@@ -131,7 +136,7 @@ public class CountdownFragment extends Fragment {
         }
       },
       1,
-      60,
+      taskScheduled,
       TimeUnit.SECONDS);
 
     return view;
@@ -172,38 +177,21 @@ public class CountdownFragment extends Fragment {
         Period period = interval.toPeriod();
 
         // construct format for remaining time
-        String format = "";
-        if (period.getYears() > 0) {
-          format = String.format(Locale.US, "%d Year(s)", period.getYears());
-        }
-
-        if (period.getMonths() > 0) {
-          format = String.format(Locale.US, "%s %d Month(s)", format, period.getDays());
-        }
-
-        if (period.getDays() > 0) {
-          format = String.format(Locale.US, "%s %d Day(s)", format, period.getDays());
-        }
-
-        if (format.isEmpty()) {
-          format = String.format(Locale.US, "%02d:%02d:%02d", period.getHours(), period.getMinutes(), period.getSeconds());
-        } else {
-          format = String.format(Locale.US, "%s and %02d:%02d:%02d", format, period.getHours(), period.getMinutes(), period.getSeconds());
-        }
-
-        mRemainingEdit.setText(format);
-
-        LogUtils.debug(
-          TAG,
-          "Created: %d Now: %d Complete: %d",
-          mEventSummary.CreatedDate,
-          Calendar.getInstance().getTimeInMillis(),
-          mEventSummary.EventDate);
-        long difference = mEventSummary.EventDate - mEventSummary.CreatedDate;
-        long elapsed = Calendar.getInstance().getTimeInMillis() - mEventSummary.CreatedDate;
-        int percent = (int) (elapsed * 100 / difference);
-        LogUtils.debug(TAG, "Difference: %d Elapsed: %d Percentage Complete: %d", difference, elapsed, percent);
-        mProgress.setProgress(percent, false);
+        mRemainingDaysEdit.setText(
+          String.format(
+            Locale.US,
+            "%d Year(s), %d Month(s), %d Day(s)",
+            period.getYears(),
+            period.getMonths(),
+            period.getDays()));
+        mRemainingTimeEdit.setText(
+          String.format(
+            Locale.US,
+            "%d Hours, %d Minutes, %d Seconds",
+            period.getHours(),
+            period.getMinutes(),
+            period.getSeconds()));
+        mProgress.setProgress(mEventSummary.getPercentRemaining(), false);
       } else {
         if (mScheduler != null) {
           mScheduler.shutdown();
@@ -211,11 +199,13 @@ public class CountdownFragment extends Fragment {
           LogUtils.debug(TAG, "Scheduler shutdown!");
         }
 
-        mRemainingEdit.setText(getString(R.string.completed));
+        mRemainingDaysEdit.setText(getString(R.string.completed));
+        mRemainingTimeEdit.setText(getString(R.string.completed));
       }
     } catch (Exception pe) {
       LogUtils.warn(TAG, pe.getMessage());
-      mRemainingEdit.setText(getString(R.string.unknown));
+      mRemainingDaysEdit.setText(getString(R.string.unknown));
+      mRemainingTimeEdit.setText(getString(R.string.unknown));
     }
   }
 }

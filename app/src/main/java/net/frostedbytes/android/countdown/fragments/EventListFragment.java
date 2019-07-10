@@ -26,6 +26,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import net.frostedbytes.android.countdown.BaseActivity;
@@ -185,6 +186,7 @@ public class EventListFragment extends Fragment {
     private final TextView mEventTitleTextView;
     private final TextView mEventDateTextView;
     private final TouchableImageView mDeleteEventImageView;
+    private final ProgressBar mProgress;
 
     private EventSummary mEventSummary;
 
@@ -195,6 +197,8 @@ public class EventListFragment extends Fragment {
       mEventTitleTextView = itemView.findViewById(R.id.event_item_text_title);
       mEventDateTextView = itemView.findViewById(R.id.event_item_text_date);
       mDeleteEventImageView = itemView.findViewById(R.id.event_item_delete);
+      mProgress = itemView.findViewById(R.id.event_item_progress);
+
       mDeleteEventImageView.setOnTouchListener((view, motionEvent) -> {
 
         switch (motionEvent.getAction()) {
@@ -219,6 +223,8 @@ public class EventListFragment extends Fragment {
       } else {
         mEventDateTextView.setText(DateUtils.formatDateForDisplay(mEventSummary.EventDate));
       }
+
+      mProgress.setProgress(mEventSummary.getPercentRemaining(), false);
     }
 
     @Override

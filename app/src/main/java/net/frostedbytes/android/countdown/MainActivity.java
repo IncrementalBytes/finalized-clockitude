@@ -16,11 +16,18 @@
 package net.frostedbytes.android.countdown;
 
 import com.google.android.material.snackbar.Snackbar;
+
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.appcompat.widget.Toolbar;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -32,9 +39,9 @@ import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.perf.FirebasePerformance;
 import com.google.firebase.perf.metrics.Trace;
 
+import net.frostedbytes.android.countdown.common.DateUtils;
 import net.frostedbytes.android.countdown.common.PathUtils;
 import net.frostedbytes.android.countdown.fragments.CountdownFragment;
-import net.frostedbytes.android.countdown.fragments.CreateEventFragment;
 import net.frostedbytes.android.countdown.fragments.EventListFragment;
 import net.frostedbytes.android.countdown.models.EventSummary;
 import net.frostedbytes.android.countdown.models.User;
@@ -46,19 +53,20 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 import java.util.TimeZone;
 import java.util.UUID;
 
 public class MainActivity extends BaseActivity implements
   EventListFragment.OnEventListListener,
-  CountdownFragment.OnCountdownListener,
-  CreateEventFragment.OnCreateEventListener {
+  CountdownFragment.OnCountdownListener {
 
   private static final String TAG = BaseActivity.BASE_TAG + MainActivity.class.getSimpleName();
 
   private Snackbar mSnackbar;
 
   private Map<String, EventSummary> mEventSummaries;
+  private int mNotificationId;
   private User mUser;
 
   /*
@@ -85,6 +93,7 @@ public class MainActivity extends BaseActivity implements
     Toolbar toolbar = findViewById(R.id.main_toolbar);
     setSupportActionBar(toolbar);
 
+    createNotificationChannel();
     mUser = new User();
     mUser.Id = getIntent().getStringExtra(BaseActivity.ARG_FIREBASE_USER_ID);
     mUser.Email = getIntent().getStringExtra(BaseActivity.ARG_EMAIL);
@@ -135,11 +144,48 @@ public class MainActivity extends BaseActivity implements
         replaceFragment(EventListFragment.newInstance(new ArrayList<>(mEventSummaries.values())));
         break;
       case R.id.action_create:
-        replaceFragment(CreateEventFragment.newInstance(new ArrayList<>(mEventSummaries.values())));
+        Intent createIntent = new Intent(MainActivity.this, CreateEventActivity.class);
+        startActivityForResult(createIntent, RC_CREATE_EVENT);
         break;
     }
 
     return super.onOptionsItemSelected(item);
+  }
+
+  @Override
+  public void onActivityResult(int requestCode, int resultCode, Intent data) {
+    super.onActivityResult(requestCode, resultCode, data);
+
+    LogUtils.debug(TAG, "++onActivityResult(%1d, %2d, Intent)", requestCode, resultCode);
+    if (requestCode == RC_CREATE_EVENT) {
+      if (resultCode == RESULT_OK) {
+        EventSummary eventSummary = data.getParcelableExtra(BaseActivity.ARG_EVENT_SUMMARY);
+        if (eventSummary.EventId == null || eventSummary.EventId.isEmpty() || eventSummary.EventId.equals(BaseActivity.DEFAULT_EVENT_ID)) {
+          eventSummary.EventId = UUID.randomUUID().toString();
+        }
+
+        // TODO: has this event been created before?
+        eventSummary.UserId = mUser.Id;
+        mEventSummaries.put(eventSummary.EventId, eventSummary);
+        String queryPath = PathUtils.combine(User.ROOT, mUser.Id, EventSummary.ROOT, eventSummary.EventId);
+        Trace eventSummaryTrace = FirebasePerformance.getInstance().newTrace("set_event_summary");
+        eventSummaryTrace.start();
+        FirebaseFirestore.getInstance().document(queryPath).set(eventSummary, SetOptions.merge()).addOnCompleteListener(task -> {
+
+          if (task.isSuccessful()) {
+            replaceFragment(EventListFragment.newInstance(new ArrayList<>(mEventSummaries.values())));
+            eventSummaryTrace.incrementMetric("event_summary_add", 1);
+          } else {
+            eventSummaryTrace.incrementMetric("event_summary_err", 1);
+            showDismissableSnackbar(getString(R.string.err_add_event_summary));
+          }
+
+          eventSummaryTrace.stop();
+        });
+      } else if (resultCode == RESULT_CANCELED){
+        replaceFragment(EventListFragment.newInstance(new ArrayList<>(mEventSummaries.values())));
+      }
+    }
   }
 
   /*
@@ -149,7 +195,8 @@ public class MainActivity extends BaseActivity implements
   public void onCreateEvent() {
 
     LogUtils.debug(TAG, "++onCreateEvent()");
-    replaceFragment(CreateEventFragment.newInstance(new ArrayList<>(mEventSummaries.values())));
+    Intent createIntent = new Intent(MainActivity.this, CreateEventActivity.class);
+    startActivityForResult(createIntent, RC_CREATE_EVENT);
   }
 
   @Override
@@ -187,6 +234,25 @@ public class MainActivity extends BaseActivity implements
   }
 
   @Override
+  public void onCountdownComplete(EventSummary eventSummary) {
+
+    LogUtils.debug(TAG, "++onCountdownComplete(%s)", eventSummary.toString());
+    NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
+      .setSmallIcon(R.drawable.ic_notification_icon)
+      .setContentTitle(getString(R.string.app_name))
+      .setContentText(String.format(Locale.US, "%s - COMPLETE!", eventSummary.EventName))
+      .setStyle(new NotificationCompat.BigTextStyle()
+        .bigText(String.format(Locale.US, "%s - COMPLETED @ %s", eventSummary.EventName, DateUtils.formatDateForDisplay(eventSummary.EventDate))))
+      .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+
+    NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+
+    // notificationId is a unique int for each notification that you must define
+    mNotificationId = new Random().nextInt();
+    notificationManager.notify(mNotificationId, builder.build());
+  }
+
+  @Override
   public void onSchedulerFailed() {
 
     LogUtils.debug(TAG, "++onSchedulerFailed()");
@@ -196,38 +262,31 @@ public class MainActivity extends BaseActivity implements
       Snackbar.LENGTH_LONG).show();
   }
 
-  @Override
-  public void onEventCreated(EventSummary eventSummary) {
-
-    LogUtils.debug(TAG, "++onEventCreated(%s)", eventSummary.toString());
-    if (eventSummary.EventId == null || eventSummary.EventId.isEmpty() || eventSummary.EventId.equals(BaseActivity.DEFAULT_EVENT_ID)) {
-      eventSummary.EventId = UUID.randomUUID().toString();
-    }
-
-    eventSummary.UserId = mUser.Id;
-    mEventSummaries.put(eventSummary.EventId, eventSummary);
-    String queryPath = PathUtils.combine(User.ROOT, mUser.Id, EventSummary.ROOT, eventSummary.EventId);
-    Trace eventSummaryTrace = FirebasePerformance.getInstance().newTrace("set_event_summary");
-    eventSummaryTrace.start();
-    FirebaseFirestore.getInstance().document(queryPath).set(eventSummary, SetOptions.merge()).addOnCompleteListener(task -> {
-
-      if (task.isSuccessful()) {
-        replaceFragment(EventListFragment.newInstance(new ArrayList<>(mEventSummaries.values())));
-        eventSummaryTrace.incrementMetric("event_summary_add", 1);
-      } else {
-        eventSummaryTrace.incrementMetric("event_summary_err", 1);
-        showDismissableSnackbar(getString(R.string.err_add_event_summary));
-      }
-
-      eventSummaryTrace.stop();
-    });
-  }
-
   /*
     Private Method(s)
    */
+  private void createNotificationChannel() {
+
+    LogUtils.debug(TAG, "++createNotificationChannel()");
+    // Create the NotificationChannel, but only on API 26+ because
+    // the NotificationChannel class is new and not in the support library
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      CharSequence name = getString(R.string.channel_name);
+      String description = getString(R.string.channel_description);
+      int importance = NotificationManager.IMPORTANCE_DEFAULT;
+      NotificationChannel channel = new NotificationChannel(BaseActivity.CHANNEL_ID, name, importance);
+      channel.setDescription(description);
+
+      // Register the channel with the system; you can't change the importance
+      // or other notification behaviors after this
+      NotificationManager notificationManager = getSystemService(NotificationManager.class);
+      notificationManager.createNotificationChannel(channel);
+    }
+  }
+
   private void getEventList() {
 
+    LogUtils.debug(TAG, "++getEventList()");
     mEventSummaries = new HashMap<>();
     FirebaseFirestore db = FirebaseFirestore.getInstance();
     String queryPath = PathUtils.combine(User.ROOT, mUser.Id, EventSummary.ROOT);
@@ -269,7 +328,8 @@ public class MainActivity extends BaseActivity implements
           Snackbar.LENGTH_INDEFINITE);
         snackbar.setAction("Create", v -> {
           snackbar.dismiss();
-          replaceFragment(CreateEventFragment.newInstance(new ArrayList<>(mEventSummaries.values())));
+          Intent createIntent = new Intent(MainActivity.this, CreateEventActivity.class);
+          startActivityForResult(createIntent, RC_CREATE_EVENT);
         });
         snackbar.show();
       }

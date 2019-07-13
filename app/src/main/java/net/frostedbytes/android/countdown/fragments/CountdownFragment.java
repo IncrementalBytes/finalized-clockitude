@@ -49,6 +49,8 @@ public class CountdownFragment extends Fragment {
 
   public interface OnCountdownListener {
 
+    void onCountdownComplete(EventSummary eventSummary);
+
     void onSchedulerFailed();
   }
 
@@ -199,8 +201,9 @@ public class CountdownFragment extends Fragment {
           LogUtils.debug(TAG, "Scheduler shutdown!");
         }
 
-        mRemainingDaysEdit.setText(getString(R.string.completed));
-        mRemainingTimeEdit.setText(getString(R.string.completed));
+        mRemainingDaysEdit.setText(getString(R.string.complete));
+        mRemainingTimeEdit.setText(getString(R.string.complete));
+        mCallback.onCountdownComplete(mEventSummary);
       }
     } catch (Exception pe) {
       LogUtils.warn(TAG, pe.getMessage());

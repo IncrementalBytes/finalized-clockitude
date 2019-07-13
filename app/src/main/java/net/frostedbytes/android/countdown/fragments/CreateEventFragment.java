@@ -31,7 +31,6 @@ import net.frostedbytes.android.countdown.R;
 import net.frostedbytes.android.countdown.models.EventSummary;
 import net.frostedbytes.android.countdown.common.LogUtils;
 
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Locale;
 
@@ -42,6 +41,8 @@ public class CreateEventFragment extends Fragment {
   public interface OnCreateEventListener {
 
     void onEventCreated(EventSummary eventSummary);
+
+    void onSetEventTime(EventSummary eventSummary);
   }
 
   private OnCreateEventListener mCallback;
@@ -49,16 +50,24 @@ public class CreateEventFragment extends Fragment {
   private EditText mNameEditView;
 
   private int mDay;
-  private ArrayList<EventSummary> mEventSummaries;
+  private EventSummary mEventSummary;
+  private int mHour;
+  private int mMinute;
   private int mMonth;
   private int mYear;
 
-  public static CreateEventFragment newInstance(ArrayList<EventSummary> eventSummaries) {
+  public static CreateEventFragment newInstance() {
 
-    LogUtils.debug(TAG, "++newInstance(ArrayList<EventSummary>)");
+    LogUtils.debug(TAG, "++newInstance()");
+    return newInstance(new EventSummary());
+  }
+
+  public static CreateEventFragment newInstance(EventSummary eventSummary) {
+
+    LogUtils.debug(TAG, "++newInstance(%s)", eventSummary.toString());
     CreateEventFragment fragment = new CreateEventFragment();
     Bundle args = new Bundle();
-    args.putParcelableArrayList(BaseActivity.ARG_EVENT_SUMMARIES, eventSummaries);
+    args.putParcelable(BaseActivity.ARG_EVENT_SUMMARY, eventSummary);
     fragment.setArguments(args);
     return fragment;
   }
@@ -78,13 +87,9 @@ public class CreateEventFragment extends Fragment {
 
     Bundle arguments = getArguments();
     if (arguments != null) {
-      mEventSummaries = arguments.getParcelableArrayList(BaseActivity.ARG_EVENT_SUMMARIES);
+      mEventSummary = arguments.getParcelable(BaseActivity.ARG_EVENT_SUMMARY);
     } else {
       LogUtils.error(TAG, "Arguments were null.");
-    }
-
-    if (mEventSummaries == null) {
-      mEventSummaries = new ArrayList<>();
     }
   }
 
@@ -95,12 +100,42 @@ public class CreateEventFragment extends Fragment {
     final View view = inflater.inflate(R.layout.fragment_create, container, false);
 
     mNameEditView = view.findViewById(R.id.create_edit_name);
+    EditText mTimeEditView = view.findViewById(R.id.create_edit_time);
     CalendarView calendarView = view.findViewById(R.id.create_calendar_date);
+    Button setTimeButton = view.findViewById(R.id.create_button_time);
+
+    if (mEventSummary != null && !mEventSummary.EventName.isEmpty()) {
+      mNameEditView.setText(mEventSummary.EventName);
+    }
+
     calendarView.setOnDateChangeListener((view1, year, month, dayOfMonth) -> {
 
       mDay = dayOfMonth;
       mMonth = month; // note: month value is based on 0-11
       mYear = year;
+    });
+
+    if (mEventSummary != null && mEventSummary.EventDate > 0) {
+      Calendar calendar = Calendar.getInstance();
+      calendar.setTimeInMillis(mEventSummary.EventDate);
+      calendarView.setDate(mEventSummary.EventDate);
+      mDay = calendar.get(Calendar.DATE);
+      mMonth = calendar.get(Calendar.MONTH);
+      mYear = calendar.get(Calendar.YEAR);
+      mHour = calendar.get(Calendar.HOUR_OF_DAY);
+      mMinute = calendar.get(Calendar.MINUTE);
+      mTimeEditView.setText(String.format(Locale.US, "%02d:%02d", mHour, mMinute));
+    }
+
+    setTimeButton.setOnClickListener(v -> {
+
+      EventSummary eventSummary = new EventSummary();
+      Calendar calendar = Calendar.getInstance();
+      eventSummary.EventName = mNameEditView.getText().toString();
+      eventSummary.CreatedDate = calendar.getTimeInMillis();
+      calendar.set(mYear, mMonth, mDay, mHour, mMinute, 0);
+      eventSummary.EventDate = calendar.getTimeInMillis();
+      mCallback.onSetEventTime(eventSummary);
     });
 
     Button createButton = view.findViewById(R.id.create_button_update);
@@ -111,24 +146,11 @@ public class CreateEventFragment extends Fragment {
         eventSummary.EventName = mNameEditView.getText().toString();
         Calendar calendar = Calendar.getInstance();
         eventSummary.CreatedDate = calendar.getTimeInMillis();
-        calendar.set(mYear, mMonth, mDay, 0, 0, 0); // TODO: replace with given time
+        calendar.set(mYear, mMonth, mDay, mHour, mMinute, 0);
         eventSummary.EventDate = calendar.getTimeInMillis();
-        LogUtils.debug(TAG, "EventDate: " + calendar.getTime() + " (" + calendar.getTimeInMillis() + ")");
 
         // make sure we didn't create a similar event
-        boolean found = false;
-        for (EventSummary summary : mEventSummaries) {
-          if (summary.equals(eventSummary)) {
-            found = true;
-            break;
-          }
-        }
-
-        if (!found) {
-          mCallback.onEventCreated(eventSummary);
-        } else {
-          // TODO: display duplicate event message
-        }
+        mCallback.onEventCreated(eventSummary);
       }
     });
 
@@ -141,6 +163,5 @@ public class CreateEventFragment extends Fragment {
 
     LogUtils.debug(TAG, "++onDestroy()");
     mCallback = null;
-    mEventSummaries = null;
   }
 }

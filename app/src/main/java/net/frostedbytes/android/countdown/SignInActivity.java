@@ -44,8 +44,6 @@ public class SignInActivity extends BaseActivity implements OnClickListener {
 
   private static final String TAG = BaseActivity.BASE_TAG + SignInActivity.class.getSimpleName();
 
-  private static final int RC_SIGN_IN = 4701;
-
   private FirebaseAnalytics mFirebaseAnalytics;
 
   private ProgressBar mProgressBar;
@@ -112,7 +110,7 @@ public class SignInActivity extends BaseActivity implements OnClickListener {
     super.onActivityResult(requestCode, resultCode, data);
 
     LogUtils.debug(TAG, "++onActivityResult(%1d, %2d, Intent)", requestCode, resultCode);
-    if (requestCode == RC_SIGN_IN) {
+    if (requestCode == BaseActivity.RC_SIGN_IN) {
       GoogleSignInResult result = Auth.GoogleSignInApi.getSignInResultFromIntent(data);
       if (result.isSuccess()) {
         mAccount = result.getSignInAccount();
@@ -198,6 +196,6 @@ public class SignInActivity extends BaseActivity implements OnClickListener {
 
     LogUtils.debug(TAG, "++signInWithGoogle()");
     Intent signInIntent = Auth.GoogleSignInApi.getSignInIntent(mGoogleApiClient);
-    startActivityForResult(signInIntent, RC_SIGN_IN);
+    startActivityForResult(signInIntent, BaseActivity.RC_SIGN_IN);
   }
 }

@@ -219,7 +219,7 @@ public class EventListFragment extends Fragment {
       mEventSummary = eventSummary;
       mEventTitleTextView.setText(mEventSummary.EventName);
       if (mEventSummary.EventDate < Calendar.getInstance().getTimeInMillis()) {
-        mEventDateTextView.setText(getString(R.string.completed));
+        mEventDateTextView.setText(getString(R.string.complete));
       } else {
         mEventDateTextView.setText(DateUtils.formatDateForDisplay(mEventSummary.EventDate));
       }

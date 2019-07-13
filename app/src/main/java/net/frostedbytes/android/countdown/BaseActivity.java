@@ -29,4 +29,10 @@ public class BaseActivity  extends AppCompatActivity {
 
   public static final String DEFAULT_EVENT_ID = "00000000-0000-0000-0000-000000000000";
   public static final String DEFAULT_USER_ID = "0000000000000000000000000000";
+
+  public static final String CHANNEL_ID = "CountdownNotification";
+
+  public static final int RC_CANCEL = 4700;
+  public static final int RC_SIGN_IN = 4701;
+  public static final int RC_CREATE_EVENT = 4702;
 }

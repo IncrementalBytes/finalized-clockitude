@@ -53,6 +53,15 @@ public class EventSummary implements Parcelable {
     UserId = BaseActivity.DEFAULT_USER_ID;
   }
 
+  public EventSummary(EventSummary eventSummary) {
+
+    CreatedDate = eventSummary.CreatedDate;
+    EventDate = eventSummary.EventDate;
+    EventId = eventSummary.EventId;
+    EventName = eventSummary.EventName;
+    UserId = eventSummary.UserId;
+  }
+
   protected EventSummary(Parcel in) {
 
     CreatedDate = in.readLong();

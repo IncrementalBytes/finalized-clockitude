@@ -15,10 +15,17 @@
   <string name="time_of_event">(Optional) Time of Event:</string>
   <string name="dismiss">Dismiss</string>
   <string name="err_add_event_summary">Could not add event, try again later.</string>
-  <string name="completed">COMPLETED!</string>
+  <string name="complete">COMPLETE!</string>
   <string name="default_time">00:00</string>
   <string name="err_scheduler_failed">Could not start countdown clock, please try again later.</string>
   <string name="unknown">-</string>
   <string name="date_format">EEE MMM dd hh:mm:ss z yyyy</string>
   <string name="time_remaining">Time Remaining:</string>
+  <string name="channel_name">Countdown Notification</string>
+  <string name="channel_description">Notifications for Countdown!</string>
+  <string name="pick_time">Choose Time</string>
+  <string name="set_time">Set Time</string>
+  <string name="menu_back">Go Back</string>
+  <string name="ok">OK</string>
+  <string name="cancel">Cancel</string>
 </resources>

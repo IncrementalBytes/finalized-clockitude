@@ -27,12 +27,18 @@ public class BaseActivity  extends AppCompatActivity {
   public static final String ARG_FIREBASE_USER_ID = "firebase_user_id";
   public static final String ARG_USER_NAME = "user_name";
 
+  public static final String DEFAULT_DATE_TIME = "";
   public static final String DEFAULT_EVENT_ID = "00000000-0000-0000-0000-000000000000";
   public static final String DEFAULT_USER_ID = "0000000000000000000000000000";
 
-  public static final String CHANNEL_ID = "CountdownNotification";
+  public static final String CHANNEL_ID = "ClockitudeNotification";
 
   public static final int RC_CANCEL = 4700;
   public static final int RC_SIGN_IN = 4701;
   public static final int RC_CREATE_EVENT = 4702;
+  public static final int RC_ALARM = 4703;
+
+  public static final int ONE_DAY = 1000 * 60 * 60 * 24;
+  public static final int ONE_MINUTE = 60000;
+  public static final int ONE_SECOND = 1000;
 }

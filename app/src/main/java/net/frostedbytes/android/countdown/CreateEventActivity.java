@@ -27,7 +27,7 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.google.android.material.snackbar.Snackbar;
 
-import net.frostedbytes.android.countdown.common.LogUtils;
+import net.frostedbytes.android.common.utils.LogUtils;
 import net.frostedbytes.android.countdown.fragments.CreateEventFragment;
 import net.frostedbytes.android.countdown.fragments.EventTimePickerFragment;
 import net.frostedbytes.android.countdown.models.EventSummary;

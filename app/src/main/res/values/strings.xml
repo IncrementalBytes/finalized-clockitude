@@ -1,5 +1,5 @@
 <resources>
-  <string name="app_name">Countdown!</string>
+  <string name="app_name">Finalized Clockitude!</string>
   <string name="desc_locked">Sign-in to proceed.</string>
   <string name="placeholder">TBD</string>
   <string name="desc_add_event">Click to add event</string>
@@ -21,11 +21,24 @@
   <string name="unknown">-</string>
   <string name="date_format">EEE MMM dd hh:mm:ss z yyyy</string>
   <string name="time_remaining">Time Remaining:</string>
-  <string name="channel_name">Countdown Notification</string>
-  <string name="channel_description">Notifications for Countdown!</string>
+  <string name="channel_name">Clockitude Notification</string>
+  <string name="channel_description">Notifications for Finalized Clockitude!</string>
   <string name="pick_time">Choose Time</string>
   <string name="set_time">Set Time</string>
   <string name="menu_back">Go Back</string>
   <string name="ok">OK</string>
   <string name="cancel">Cancel</string>
+  <string name="menu_logoff">Log Out</string>
+  <string name="logout_message">Log out of Clockitude?</string>
+  <string name="err_event_not_created">Unable to create event, please try again later.</string>
+  <string name="delete_event">Delete event</string>
+  <string name="hint_days_remaining">Shows day(s) remaining</string>
+  <string name="hint_time_remaining">Shows time remaining</string>
+  <string name="title_refresh">Refresh</string>
+  <string name="sign_in_with">Sign-in with</string>
+  <string name="beta">BETA</string>
+  <string name="signing_in">Signing in…</string>
+  <string name="calculating">Calculating…</string>
+  <string name="event_created">Event Created:</string>
+  <string name="one_hundred_percent">100%</string>
 </resources>

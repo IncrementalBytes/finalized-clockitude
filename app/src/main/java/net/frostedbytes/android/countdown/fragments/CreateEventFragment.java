@@ -26,10 +26,10 @@ import android.widget.Button;
 import android.widget.CalendarView;
 import android.widget.EditText;
 
+import net.frostedbytes.android.common.utils.LogUtils;
 import net.frostedbytes.android.countdown.BaseActivity;
 import net.frostedbytes.android.countdown.R;
 import net.frostedbytes.android.countdown.models.EventSummary;
-import net.frostedbytes.android.countdown.common.LogUtils;
 
 import java.util.Calendar;
 import java.util.Locale;
@@ -80,11 +80,15 @@ public class CreateEventFragment extends Fragment {
     try {
       mCallback = (OnCreateEventListener) context;
     } catch (ClassCastException e) {
-      throw new ClassCastException(
-        // TODO: update with list of events
-        String.format(Locale.US, "%s must implement TBD.", context.toString()));
+      throw new ClassCastException(String.format(Locale.US, "Missing interface implementations for %s", context.toString()));
     }
+  }
 
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+
+    LogUtils.debug(TAG, "++onCreate(Bundle)");
     Bundle arguments = getArguments();
     if (arguments != null) {
       mEventSummary = arguments.getParcelable(BaseActivity.ARG_EVENT_SUMMARY);
@@ -97,8 +101,22 @@ public class CreateEventFragment extends Fragment {
   public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
     LogUtils.debug(TAG, "++onCreateView(LayoutInflater, ViewGroup, Bundle)");
-    final View view = inflater.inflate(R.layout.fragment_create, container, false);
+    return inflater.inflate(R.layout.fragment_create, container, false);
+  }
 
+  @Override
+  public void onDetach() {
+    super.onDetach();
+
+    LogUtils.debug(TAG, "++onDetach()");
+    mCallback = null;
+  }
+
+  @Override
+  public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
+    super.onViewCreated(view, savedInstanceState);
+
+    LogUtils.debug(TAG, "++onViewCreated(View, Bundle)");
     mNameEditView = view.findViewById(R.id.create_edit_name);
     EditText mTimeEditView = view.findViewById(R.id.create_edit_time);
     CalendarView calendarView = view.findViewById(R.id.create_calendar_date);
@@ -115,8 +133,11 @@ public class CreateEventFragment extends Fragment {
       mYear = year;
     });
 
+    Calendar calendar = Calendar.getInstance();
+    mDay = calendar.get(Calendar.DATE);
+    mMonth = calendar.get(Calendar.MONTH);
+    mYear = calendar.get(Calendar.YEAR);
     if (mEventSummary != null && mEventSummary.EventDate > 0) {
-      Calendar calendar = Calendar.getInstance();
       calendar.setTimeInMillis(mEventSummary.EventDate);
       calendarView.setDate(mEventSummary.EventDate);
       mDay = calendar.get(Calendar.DATE);
@@ -130,9 +151,8 @@ public class CreateEventFragment extends Fragment {
     setTimeButton.setOnClickListener(v -> {
 
       EventSummary eventSummary = new EventSummary();
-      Calendar calendar = Calendar.getInstance();
       eventSummary.EventName = mNameEditView.getText().toString();
-      eventSummary.CreatedDate = calendar.getTimeInMillis();
+      eventSummary.CreatedDate = Calendar.getInstance().getTimeInMillis();
       calendar.set(mYear, mMonth, mDay, mHour, mMinute, 0);
       eventSummary.EventDate = calendar.getTimeInMillis();
       mCallback.onSetEventTime(eventSummary);
@@ -144,8 +164,7 @@ public class CreateEventFragment extends Fragment {
       if (mCallback != null) {
         EventSummary eventSummary = new EventSummary();
         eventSummary.EventName = mNameEditView.getText().toString();
-        Calendar calendar = Calendar.getInstance();
-        eventSummary.CreatedDate = calendar.getTimeInMillis();
+        eventSummary.CreatedDate = Calendar.getInstance().getTimeInMillis();
         calendar.set(mYear, mMonth, mDay, mHour, mMinute, 0);
         eventSummary.EventDate = calendar.getTimeInMillis();
 
@@ -153,15 +172,5 @@ public class CreateEventFragment extends Fragment {
         mCallback.onEventCreated(eventSummary);
       }
     });
-
-    return view;
-  }
-
-  @Override
-  public void onDestroy() {
-    super.onDestroy();
-
-    LogUtils.debug(TAG, "++onDestroy()");
-    mCallback = null;
   }
 }

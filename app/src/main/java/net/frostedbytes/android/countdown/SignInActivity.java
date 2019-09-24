@@ -17,6 +17,8 @@ package net.frostedbytes.android.countdown;
 
 import android.content.Intent;
 import android.os.Bundle;
+
+import com.crashlytics.android.core.CrashlyticsCore;
 import com.google.android.material.snackbar.Snackbar;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -35,10 +37,12 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.GoogleAuthProvider;
 
-import net.frostedbytes.android.countdown.common.LogUtils;
+import net.frostedbytes.android.common.utils.LogUtils;
 
 import java.util.Calendar;
 import java.util.Locale;
+
+import io.fabric.sdk.android.Fabric;
 
 public class SignInActivity extends BaseActivity implements OnClickListener {
 
@@ -59,6 +63,11 @@ public class SignInActivity extends BaseActivity implements OnClickListener {
 
     LogUtils.debug(TAG, "++onCreate(Bundle)");
     setContentView(R.layout.activity_sign_in);
+
+    CrashlyticsCore crashlyticsCore = new CrashlyticsCore.Builder()
+      .disabled(BuildConfig.DEBUG)
+      .build();
+    Fabric.with(this, crashlyticsCore);
 
     SignInButton signInWithGoogleButton = findViewById(R.id.sign_in_button_google);
     signInWithGoogleButton.setOnClickListener(this);

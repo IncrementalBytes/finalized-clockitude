@@ -23,19 +23,18 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import net.frostedbytes.android.common.utils.LogUtils;
+import net.frostedbytes.android.common.utils.TimeUtils;
 import net.frostedbytes.android.countdown.BaseActivity;
 import net.frostedbytes.android.countdown.R;
 import net.frostedbytes.android.countdown.common.SortUtils;
 import net.frostedbytes.android.countdown.models.EventSummary;
-import net.frostedbytes.android.countdown.common.DateUtils;
-import net.frostedbytes.android.countdown.common.LogUtils;
-import net.frostedbytes.android.countdown.views.TouchableImageView;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -81,11 +80,15 @@ public class EventListFragment extends Fragment {
     try {
       mCallback = (OnEventListListener) context;
     } catch (ClassCastException e) {
-      throw new ClassCastException(
-        // TODO: update with list of events
-        String.format(Locale.US, "%s must implement TBD.", context.toString()));
+      throw new ClassCastException(String.format(Locale.US, "Missing interface implementations for %s", context.toString()));
     }
+  }
 
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+
+    LogUtils.debug(TAG, "++onCreate(Bundle)");
     Bundle arguments = getArguments();
     if (arguments != null) {
       mEventSummaries = arguments.getParcelableArrayList(BaseActivity.ARG_EVENT_SUMMARIES);
@@ -98,8 +101,38 @@ public class EventListFragment extends Fragment {
   public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
     LogUtils.debug(TAG, "++onCreateView(LayoutInflater, ViewGroup, Bundle)");
-    final View view = inflater.inflate(R.layout.fragment_event_list, container, false);
+    return inflater.inflate(R.layout.fragment_event_list, container, false);
+  }
 
+  @Override
+  public void onDestroy() {
+    super.onDestroy();
+
+    LogUtils.debug(TAG, "++onDestroy()");
+    mCallback = null;
+  }
+
+  @Override
+  public void onDetach() {
+    super.onDetach();
+
+    LogUtils.debug(TAG, "++onDetach()");
+    mCallback = null;
+  }
+
+  @Override
+  public void onResume() {
+    super.onResume();
+
+    LogUtils.debug(TAG, "++onResume()");
+    updateUI();
+  }
+
+  @Override
+  public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
+    super.onViewCreated(view, savedInstanceState);
+
+    LogUtils.debug(TAG, "++onViewCreated(View, Bundle)");
     mRecyclerView = view.findViewById(R.id.event_list_view_events);
     final LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getActivity());
     mRecyclerView.setLayoutManager(linearLayoutManager);
@@ -118,26 +151,11 @@ public class EventListFragment extends Fragment {
     });
 
     updateUI();
-    return view;
   }
 
-  @Override
-  public void onDestroy() {
-    super.onDestroy();
-
-    LogUtils.debug(TAG, "++onDestroy()");
-    mCallback = null;
-    mEventSummaries = null;
-  }
-
-  @Override
-  public void onResume() {
-    super.onResume();
-
-    LogUtils.debug(TAG, "++onResume()");
-    updateUI();
-  }
-
+  /*
+    Private Method(s)
+   */
   private void updateUI() {
 
     LogUtils.debug(TAG, "++updateUI()");
@@ -185,8 +203,8 @@ public class EventListFragment extends Fragment {
 
     private final TextView mEventTitleTextView;
     private final TextView mEventDateTextView;
-    private final TouchableImageView mDeleteEventImageView;
     private final ProgressBar mProgress;
+    private final TextView mProgressText;
 
     private EventSummary mEventSummary;
 
@@ -196,35 +214,27 @@ public class EventListFragment extends Fragment {
       itemView.setOnClickListener(this);
       mEventTitleTextView = itemView.findViewById(R.id.event_item_text_title);
       mEventDateTextView = itemView.findViewById(R.id.event_item_text_date);
-      mDeleteEventImageView = itemView.findViewById(R.id.event_item_delete);
+      ImageButton deleteEventImageButton = itemView.findViewById(R.id.event_item_delete);
       mProgress = itemView.findViewById(R.id.event_item_progress);
+      mProgressText = itemView.findViewById(R.id.event_item_progress_text);
 
-      mDeleteEventImageView.setOnTouchListener((view, motionEvent) -> {
-
-        switch (motionEvent.getAction()) {
-          case MotionEvent.ACTION_DOWN:
-            mCallback.onDeleteEvent(mEventSummary);
-            break;
-          case MotionEvent.ACTION_UP:
-            view.performClick();
-            return true;
-        }
-
-        return true;
-      });
+      deleteEventImageButton.setOnClickListener(v -> mCallback.onDeleteEvent(mEventSummary));
     }
 
     void bind(EventSummary eventSummary) {
 
       mEventSummary = eventSummary;
       mEventTitleTextView.setText(mEventSummary.EventName);
+      int percentRemaining = mEventSummary.getPercentRemaining();
       if (mEventSummary.EventDate < Calendar.getInstance().getTimeInMillis()) {
         mEventDateTextView.setText(getString(R.string.complete));
+        mProgressText.setText(getString(R.string.one_hundred_percent));
       } else {
-        mEventDateTextView.setText(DateUtils.formatDateForDisplay(mEventSummary.EventDate));
+        mEventDateTextView.setText(TimeUtils.getFull(mEventSummary.EventDate));
+        mProgressText.setText(String.format(Locale.US, "%d%%", percentRemaining));
       }
 
-      mProgress.setProgress(mEventSummary.getPercentRemaining(), false);
+      mProgress.setProgress(percentRemaining, false);
     }
 
     @Override

@@ -21,8 +21,8 @@ import android.os.Parcelable;
 import com.google.firebase.firestore.Exclude;
 import com.google.firebase.firestore.IgnoreExtraProperties;
 
+import net.frostedbytes.android.common.utils.TimeUtils;
 import net.frostedbytes.android.countdown.BaseActivity;
-import net.frostedbytes.android.countdown.common.DateUtils;
 
 import java.util.Calendar;
 import java.util.Locale;
@@ -101,7 +101,7 @@ public class EventSummary implements Parcelable {
       Locale.US,
       "EventSummary { Name=%s, %s }",
       EventName,
-      EventDate < Calendar.getInstance().getTimeInMillis() ? "Completed!" : "Date=" + DateUtils.formatDateForDisplay(EventDate));
+      EventDate < Calendar.getInstance().getTimeInMillis() ? "Completed!" : "Date=" + TimeUtils.getFull(EventDate));
   }
 
   @Override

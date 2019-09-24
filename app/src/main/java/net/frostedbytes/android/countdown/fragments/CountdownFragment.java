@@ -26,11 +26,11 @@ import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import net.frostedbytes.android.common.utils.LogUtils;
+import net.frostedbytes.android.common.utils.TimeUtils;
 import net.frostedbytes.android.countdown.BaseActivity;
 import net.frostedbytes.android.countdown.R;
-import net.frostedbytes.android.countdown.common.DateUtils;
 import net.frostedbytes.android.countdown.models.EventSummary;
-import net.frostedbytes.android.countdown.common.LogUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -38,7 +38,6 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import org.joda.time.Interval;
 import org.joda.time.Period;
@@ -49,8 +48,6 @@ public class CountdownFragment extends Fragment {
 
   public interface OnCountdownListener {
 
-    void onCountdownComplete(EventSummary eventSummary);
-
     void onSchedulerFailed();
   }
 
@@ -58,8 +55,11 @@ public class CountdownFragment extends Fragment {
 
   private EventSummary mEventSummary;
   private ScheduledExecutorService mScheduler;
+  private int mTaskScheduled;
 
+  private TextView mCreated;
   private ProgressBar mProgress;
+  private TextView mProgressText;
   private EditText mRemainingDaysEdit;
   private EditText mRemainingTimeEdit;
 
@@ -81,10 +81,15 @@ public class CountdownFragment extends Fragment {
     try {
       mCallback = (OnCountdownListener) context;
     } catch (ClassCastException e) {
-      throw new ClassCastException(
-        String.format(Locale.US, "%s must implement TBD.", context.toString()));
+      throw new ClassCastException(String.format(Locale.US, "Missing interface implementations for %s", context.toString()));
     }
+  }
 
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+
+    LogUtils.debug(TAG, "++onCreate(Bundle)");
     Bundle arguments = getArguments();
     if (arguments != null) {
       mEventSummary = arguments.getParcelable(BaseActivity.ARG_EVENT_SUMMARY);
@@ -97,51 +102,7 @@ public class CountdownFragment extends Fragment {
   public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
     LogUtils.debug(TAG, "++onCreateView(LayoutInflater, ViewGroup, Bundle)");
-    final View view = inflater.inflate(R.layout.fragment_countdown, container, false);
-
-    TextView title = view.findViewById(R.id.countdown_text_title);
-    title.setText(mEventSummary.EventName);
-    TextView date = view.findViewById(R.id.countdown_text_date);
-    date.setText(DateUtils.formatDateForDisplay(mEventSummary.EventDate));
-
-    mProgress = view.findViewById(R.id.countdown_progress);
-    mRemainingDaysEdit = view.findViewById(R.id.countdown_edit_remaining_days);
-    mRemainingTimeEdit = view.findViewById(R.id.countdown_edit_remaining_time);
-
-    mProgress.setMax(100);
-    mProgress.setMin(0);
-
-    mScheduler = Executors.newScheduledThreadPool(1);
-
-    int taskScheduled = 60; // update every minute
-    long oneDay = 1000 * 60 * 60 * 24;
-    if ((mEventSummary.EventDate - Calendar.getInstance().getTimeInMillis()) < oneDay) {
-      taskScheduled = 1; // update every second
-    }
-
-    mScheduler.scheduleAtFixedRate(
-      new Runnable() {
-        private Runnable update = () -> updateUI();
-
-        @Override
-        public void run() {
-
-          try {
-            if (getActivity() != null) {
-              getActivity().runOnUiThread(update);
-            } else {
-              mCallback.onSchedulerFailed();
-            }
-          } catch (Exception ex) {
-            LogUtils.warn(TAG, "Exception when scheduling thread: %s", ex.getMessage());
-          }
-        }
-      },
-      1,
-      taskScheduled,
-      TimeUnit.SECONDS);
-
-    return view;
+    return inflater.inflate(R.layout.fragment_countdown, container, false);
   }
 
   @Override
@@ -157,25 +118,93 @@ public class CountdownFragment extends Fragment {
   }
 
   @Override
+  public void onDetach() {
+    super.onDetach();
+
+    LogUtils.debug(TAG, "++onDetach()");
+    mCallback = null;
+  }
+
+  @Override
   public void onResume() {
     super.onResume();
 
     LogUtils.debug(TAG, "++onResume()");
+  }
+
+  @Override
+  public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
+    super.onViewCreated(view, savedInstanceState);
+
+    LogUtils.debug(TAG, "++onViewCreated(View, Bundle)");
+    TextView title = view.findViewById(R.id.countdown_text_title);
+    title.setText(mEventSummary.EventName);
+    TextView date = view.findViewById(R.id.countdown_text_date);
+    date.setText(TimeUtils.getFull(mEventSummary.EventDate));
+
+    mCreated = view.findViewById(R.id.countdown_text_created_value);
+    mProgress = view.findViewById(R.id.countdown_progress);
+    mProgressText = view.findViewById(R.id.countdown_text_progress);
+    mRemainingDaysEdit = view.findViewById(R.id.countdown_edit_remaining_days);
+    mRemainingDaysEdit.setText(getString(R.string.calculating));
+    mRemainingTimeEdit = view.findViewById(R.id.countdown_edit_remaining_time);
+    mRemainingTimeEdit.setText(getString(R.string.calculating));
+
+    mProgress.setMax(100);
+    mProgress.setMin(0);
+
+    mScheduler = Executors.newScheduledThreadPool(1);
+
+    mTaskScheduled = BaseActivity.ONE_MINUTE; // update every minute
+    if ((mEventSummary.EventDate - Calendar.getInstance().getTimeInMillis()) < BaseActivity.ONE_DAY) {
+      LogUtils.debug(TAG, "Within a day of the event; setting schedule to 1 second.");
+      mTaskScheduled = BaseActivity.ONE_SECOND; // update every second
+    }
+
+//    mScheduler.scheduleAtFixedRate(
+//      new Runnable() {
+//        private Runnable update = () -> updateUI();
+//
+//        @Override
+//        public void run() {
+//
+//          try {
+//            if (getActivity() != null) {
+//              getActivity().runOnUiThread(update);
+//            } else {
+//              mCallback.onSchedulerFailed();
+//            }
+//          } catch (Exception ex) {
+//            LogUtils.warn(TAG, "Exception when scheduling thread: %s", ex.getMessage());
+//          }
+//        }
+//      },
+//      1,
+//      mTaskScheduled,
+//      TimeUnit.MILLISECONDS);
     updateUI();
   }
 
+  /*
+    Private Method(s)
+   */
   private void updateUI() {
 
-    LogUtils.debug(TAG, "++updateUI()");
+    if (mTaskScheduled == BaseActivity.ONE_MINUTE) {
+      LogUtils.debug(TAG, "++updateUI()");
+    }
 
     SimpleDateFormat simpleDateFormat = new SimpleDateFormat(getString(R.string.date_format), Locale.US);
-    Calendar calendar = Calendar.getInstance();
-    calendar.setTimeInMillis(mEventSummary.EventDate);
+    Calendar eventCalendar = Calendar.getInstance();
+    eventCalendar.setTimeInMillis(mEventSummary.EventDate);
     try {
-      Date startDate = simpleDateFormat.parse(calendar.getTime().toString());
-      Date currentDate = simpleDateFormat.parse(Calendar.getInstance().getTime().toString());
-      if (currentDate.getTime() < startDate.getTime()) {
-        Interval interval = new Interval(currentDate.getTime(), startDate.getTime());
+      Date eventDate = simpleDateFormat.parse(eventCalendar.getTime().toString());
+      Date startDate = simpleDateFormat.parse(Calendar.getInstance().getTime().toString());
+      int percentRemaining = mEventSummary.getPercentRemaining();
+      mProgress.setProgress(percentRemaining, false);
+      mCreated.setText(TimeUtils.getFull(mEventSummary.CreatedDate));
+      if (startDate.getTime() < eventDate.getTime()) {
+        Interval interval = new Interval(startDate.getTime(), eventDate.getTime());
         Period period = interval.toPeriod();
 
         // construct format for remaining time
@@ -193,7 +222,7 @@ public class CountdownFragment extends Fragment {
             period.getHours(),
             period.getMinutes(),
             period.getSeconds()));
-        mProgress.setProgress(mEventSummary.getPercentRemaining(), false);
+        mProgressText.setText(String.format(Locale.US, "%d%%", percentRemaining));
       } else {
         if (mScheduler != null) {
           mScheduler.shutdown();
@@ -203,7 +232,7 @@ public class CountdownFragment extends Fragment {
 
         mRemainingDaysEdit.setText(getString(R.string.complete));
         mRemainingTimeEdit.setText(getString(R.string.complete));
-        mCallback.onCountdownComplete(mEventSummary);
+        mProgressText.setText(getString(R.string.one_hundred_percent));
       }
     } catch (Exception pe) {
       LogUtils.warn(TAG, pe.getMessage());

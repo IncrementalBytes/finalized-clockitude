@@ -11,10 +11,10 @@ import android.widget.TimePicker;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 
+import net.frostedbytes.android.common.utils.LogUtils;
+import net.frostedbytes.android.common.utils.TimeUtils;
 import net.frostedbytes.android.countdown.BaseActivity;
 import net.frostedbytes.android.countdown.R;
-import net.frostedbytes.android.countdown.common.DateUtils;
-import net.frostedbytes.android.countdown.common.LogUtils;
 import net.frostedbytes.android.countdown.models.EventSummary;
 
 import java.util.Calendar;
@@ -53,11 +53,15 @@ public class EventTimePickerFragment extends Fragment {
     try {
       mCallback = (OnEventTimeSetListener) context;
     } catch (ClassCastException e) {
-      throw new ClassCastException(
-        // TODO: update with list of events
-        String.format(Locale.US, "%s must implement TBD.", context.toString()));
+      throw new ClassCastException(String.format(Locale.US, "Missing interface implementations for %s", context.toString()));
     }
+  }
 
+  @Override
+  public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+
+    LogUtils.debug(TAG, "++onCreate(Bundle)");
     Bundle arguments = getArguments();
     if (arguments != null) {
       mEventSummary = arguments.getParcelable(BaseActivity.ARG_EVENT_SUMMARY);
@@ -70,8 +74,22 @@ public class EventTimePickerFragment extends Fragment {
   public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
     LogUtils.debug(TAG, "++onCreateView(LayoutInflater, ViewGroup, Bundle)");
-    final View view = inflater.inflate(R.layout.fragment_time_picker, container, false);
+    return inflater.inflate(R.layout.fragment_time_picker, container, false);
+  }
 
+  @Override
+  public void onDetach() {
+    super.onDetach();
+
+    LogUtils.debug(TAG, "++onDetach()");
+    mCallback = null;
+  }
+
+  @Override
+  public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
+    super.onViewCreated(view, savedInstanceState);
+
+    LogUtils.debug(TAG, "++onViewCreated(View, Bundle)");
     mTimePicker = view.findViewById(R.id.time_picker);
     if (mEventSummary != null && mEventSummary.EventDate > 0) {
       Calendar calendar = Calendar.getInstance();
@@ -89,25 +107,16 @@ public class EventTimePickerFragment extends Fragment {
       EventSummary eventSummary = new EventSummary(mEventSummary);
       Calendar previous = Calendar.getInstance();
       previous.setTimeInMillis(eventSummary.EventDate);
-      LogUtils.debug(TAG, "EventTime was: %s", DateUtils.formatDateForDisplay(previous.getTimeInMillis()));
+      LogUtils.debug(TAG, "EventTime was: %s", TimeUtils.getFull(previous.getTimeInMillis()));
       previous.set(Calendar.HOUR_OF_DAY, mTimePicker.getHour());
       previous.set(Calendar.MINUTE, mTimePicker.getMinute());
+
       eventSummary.EventDate = previous.getTimeInMillis();
-      LogUtils.debug(TAG, "EventTime is: %s", DateUtils.formatDateForDisplay(eventSummary.EventDate));
+      LogUtils.debug(TAG, "EventTime is: %s", TimeUtils.getFull(eventSummary.EventDate));
       mCallback.onEventTimeSet(eventSummary);
     });
 
     Button cancelButton = view.findViewById(R.id.time_button_cancel);
     cancelButton.setOnClickListener(v -> mCallback.onEventTimeSet(mEventSummary));
-
-    return view;
-  }
-
-  @Override
-  public void onDestroy() {
-    super.onDestroy();
-
-    LogUtils.debug(TAG, "++onDestroy()");
-    mCallback = null;
   }
 }

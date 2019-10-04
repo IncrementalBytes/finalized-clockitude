@@ -17,6 +17,7 @@ package net.frostedbytes.android.countdown;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -27,7 +28,6 @@ import androidx.fragment.app.FragmentTransaction;
 
 import com.google.android.material.snackbar.Snackbar;
 
-import net.frostedbytes.android.common.utils.LogUtils;
 import net.frostedbytes.android.countdown.fragments.CreateEventFragment;
 import net.frostedbytes.android.countdown.fragments.EventTimePickerFragment;
 import net.frostedbytes.android.countdown.models.EventSummary;
@@ -46,7 +46,7 @@ public class CreateEventActivity extends BaseActivity implements
   @Override
   public void onBackPressed() {
 
-    LogUtils.debug(TAG, "++onBackPressed()");
+    Log.d(TAG, "++onBackPressed()");
     setResult(RESULT_CANCELED, null);
     finish();
   }
@@ -55,7 +55,7 @@ public class CreateEventActivity extends BaseActivity implements
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    LogUtils.debug(TAG, "++onCreate(Bundle)");
+    Log.d(TAG, "++onCreate(Bundle)");
     setContentView(R.layout.activity_create_event);
 
     Toolbar toolbar = findViewById(R.id.create_toolbar);
@@ -67,7 +67,7 @@ public class CreateEventActivity extends BaseActivity implements
   @Override
   public boolean onCreateOptionsMenu(Menu menu) {
 
-    LogUtils.debug(TAG, "++onCreateOptionsMenu(Menu)");
+    Log.d(TAG, "++onCreateOptionsMenu(Menu)");
     getMenuInflater().inflate(R.menu.menu_create, menu);
     return true;
   }
@@ -76,13 +76,13 @@ public class CreateEventActivity extends BaseActivity implements
   public void onDestroy() {
     super.onDestroy();
 
-    LogUtils.debug(TAG, "++onDestroy()");
+    Log.d(TAG, "++onDestroy()");
   }
 
   @Override
   public boolean onOptionsItemSelected(MenuItem item) {
 
-    LogUtils.debug(TAG, "++onOptionsItemSelected(MenuItem)");
+    Log.d(TAG, "++onOptionsItemSelected(MenuItem)");
     if (item.getItemId() == R.id.action_back) {
       setResult(RESULT_CANCELED, null);
       finish();
@@ -97,7 +97,8 @@ public class CreateEventActivity extends BaseActivity implements
   @Override
   public void onEventCreated(EventSummary eventSummary) {
 
-    LogUtils.debug(TAG, "++onEventTimeSet(%s)", eventSummary);
+    Log.d(TAG, "++onEventTimeSet(EventSummary)");
+    Log.d(TAG, "Event=" + eventSummary);
     Intent resultIntent = new Intent();
     resultIntent.putExtra(BaseActivity.ARG_EVENT_SUMMARY, eventSummary);
     setResult(RESULT_OK, resultIntent);
@@ -107,14 +108,16 @@ public class CreateEventActivity extends BaseActivity implements
   @Override
   public void onSetEventTime(EventSummary eventSummary) {
 
-    LogUtils.debug(TAG, "++onSetEventTime(%s)", eventSummary);
+    Log.d(TAG, "++onSetEventTime(EventSummary)");
+    Log.d(TAG, "Event=" + eventSummary);
     replaceFragment(EventTimePickerFragment.newInstance(eventSummary));
   }
 
   @Override
   public void onEventTimeSet(EventSummary eventSummary) {
 
-    LogUtils.debug(TAG, "++onEventTimeSet(%s)", eventSummary);
+    Log.d(TAG, "++onEventTimeSet(EventSummary)");
+    Log.d(TAG, "Event=" + eventSummary);
     replaceFragment(CreateEventFragment.newInstance(eventSummary));
   }
 
@@ -123,7 +126,7 @@ public class CreateEventActivity extends BaseActivity implements
    */
   private void replaceFragment(Fragment fragment) {
 
-    LogUtils.debug(TAG, "++replaceFragment(Fragment)");
+    Log.d(TAG, "++replaceFragment(Fragment)");
     FragmentManager fragmentManager = getSupportFragmentManager();
     FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
     fragmentTransaction.replace(R.id.create_fragment_container, fragment);
@@ -132,13 +135,13 @@ public class CreateEventActivity extends BaseActivity implements
     }
 
     fragmentTransaction.addToBackStack(fragment.getClass().getName());
-    LogUtils.debug(TAG, "Back stack count: %d", fragmentManager.getBackStackEntryCount());
+    Log.d(TAG, "Back stack count: " + fragmentManager.getBackStackEntryCount());
     fragmentTransaction.commitAllowingStateLoss();
   }
 
   private void showDismissableSnackbar(String message) {
 
-    LogUtils.warn(TAG, message);
+    Log.w(TAG, message);
     mSnackbar = Snackbar.make(
       findViewById(R.id.create_fragment_container),
       message,

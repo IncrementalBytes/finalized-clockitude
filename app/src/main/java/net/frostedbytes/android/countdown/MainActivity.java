@@ -33,18 +33,17 @@ import android.app.PendingIntent;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.perf.FirebasePerformance;
 import com.google.firebase.perf.metrics.Trace;
 
-import net.frostedbytes.android.common.utils.LogUtils;
 import net.frostedbytes.android.countdown.common.PathUtils;
 import net.frostedbytes.android.countdown.fragments.CountdownFragment;
 import net.frostedbytes.android.countdown.fragments.EventListFragment;
@@ -78,7 +77,7 @@ public class MainActivity extends BaseActivity implements
   @Override
   public void onBackPressed() {
 
-    LogUtils.debug(TAG, "++onBackPressed()");
+    Log.d(TAG, "++onBackPressed()");
     if (getSupportFragmentManager().getBackStackEntryCount() == 1) {
       finish();
     } else {
@@ -90,7 +89,7 @@ public class MainActivity extends BaseActivity implements
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    LogUtils.debug(TAG, "++onCreate(Bundle)");
+    Log.d(TAG, "++onCreate(Bundle)");
     setContentView(R.layout.activity_main);
 
     Toolbar toolbar = findViewById(R.id.main_toolbar);
@@ -107,10 +106,10 @@ public class MainActivity extends BaseActivity implements
     SimpleDateFormat simpleDateFormat = new SimpleDateFormat("EE MMM dd HH:mm:ss zzz yyyy", Locale.US);
     simpleDateFormat.setTimeZone(timeZone);
 
-    LogUtils.debug(TAG, "Time zone: " + timeZone.getID());
-    LogUtils.debug(TAG, "default time zone: " + TimeZone.getDefault().getID());
-    LogUtils.debug(TAG, "UTC:     " + simpleDateFormat.format(calendar.getTime()));
-    LogUtils.debug(TAG, "Default: " + calendar.getTime() + " (" + calendar.getTimeInMillis() + ")");
+    Log.d(TAG, "Time zone: " + timeZone.getID());
+    Log.d(TAG, "default time zone: " + TimeZone.getDefault().getID());
+    Log.d(TAG, "UTC:     " + simpleDateFormat.format(calendar.getTime()));
+    Log.d(TAG, "Default: " + calendar.getTime() + " (" + calendar.getTimeInMillis() + ")");
 
     if (mUser.Id == null || mUser.Id.isEmpty() || mUser.Id.equals(BaseActivity.DEFAULT_USER_ID)) {
       attemptLogoff();
@@ -122,7 +121,7 @@ public class MainActivity extends BaseActivity implements
   @Override
   public boolean onCreateOptionsMenu(Menu menu) {
 
-    LogUtils.debug(TAG, "++onCreateOptionsMenu(Menu)");
+    Log.d(TAG, "++onCreateOptionsMenu(Menu)");
     getMenuInflater().inflate(R.menu.menu_main, menu);
     return true;
   }
@@ -131,14 +130,14 @@ public class MainActivity extends BaseActivity implements
   public void onDestroy() {
     super.onDestroy();
 
-    LogUtils.debug(TAG, "++onDestroy()");
+    Log.d(TAG, "++onDestroy()");
     mEventSummaries = null;
   }
 
   @Override
   public boolean onOptionsItemSelected(MenuItem item) {
 
-    LogUtils.debug(TAG, "++onOptionsItemSelected(MenuItem)");
+    Log.d(TAG, "++onOptionsItemSelected(MenuItem)");
     switch (item.getItemId()) {
       case R.id.action_list:
         replaceFragment(EventListFragment.newInstance(new ArrayList<>(mEventSummaries.values())));
@@ -159,7 +158,9 @@ public class MainActivity extends BaseActivity implements
   public void onActivityResult(int requestCode, int resultCode, Intent data) {
     super.onActivityResult(requestCode, resultCode, data);
 
-    LogUtils.debug(TAG, "++onActivityResult(%1d, %2d, Intent)", requestCode, resultCode);
+    Log.d(TAG, "++onActivityResult(int, int, Intent)");
+    Log.d(TAG, "RequestCode=" + requestCode);
+    Log.d(TAG, "ResultCode=" + resultCode);
     if (requestCode == RC_CREATE_EVENT) {
       if (resultCode == RESULT_OK) {
         EventSummary eventSummary = data.getParcelableExtra(BaseActivity.ARG_EVENT_SUMMARY);
@@ -202,7 +203,7 @@ public class MainActivity extends BaseActivity implements
   @Override
   public void onCreateEvent() {
 
-    LogUtils.debug(TAG, "++onCreateEvent()");
+    Log.d(TAG, "++onCreateEvent()");
     Intent createIntent = new Intent(MainActivity.this, CreateEventActivity.class);
     startActivityForResult(createIntent, RC_CREATE_EVENT);
   }
@@ -210,16 +211,16 @@ public class MainActivity extends BaseActivity implements
   @Override
   public void onDeleteEvent(EventSummary eventSummary) {
 
-    LogUtils.debug(TAG, "++onDeleteEvent(EventSummary)");
+    Log.d(TAG, "++onDeleteEvent(EventSummary)");
     mEventSummaries.remove(eventSummary.EventId);
     String queryPath = PathUtils.combine(User.ROOT, mUser.Id, EventSummary.ROOT);
     FirebaseFirestore.getInstance().collection(queryPath).document(eventSummary.EventId).delete()
       .addOnSuccessListener(aVoid -> {
-        LogUtils.debug(TAG, "Deleted event: %s", eventSummary.EventId);
+        Log.d(TAG, "Deleted event: " + eventSummary.EventId);
         replaceFragment(EventListFragment.newInstance(new ArrayList<>(mEventSummaries.values())));
       })
       .addOnFailureListener(e -> {
-        LogUtils.error(TAG, "Could not delete event: %s; %s", eventSummary.EventId, e.getMessage());
+        Log.e(TAG, "Could not delete event: " + eventSummary.EventId, e);
         Snackbar.make(
           findViewById(R.id.main_fragment_container),
           getString(R.string.err_delete_event),
@@ -230,7 +231,8 @@ public class MainActivity extends BaseActivity implements
   @Override
   public void onPopulated(int size) {
 
-    LogUtils.debug(TAG, "++onPopulated(%d)", size);
+    Log.d(TAG, "++onPopulated(int)");
+    Log.d(TAG, "Size=" + size);
     if (mEventSummaries.size() == 0) {
       Snackbar snackbar = Snackbar.make(
         findViewById(R.id.main_fragment_container),
@@ -248,14 +250,14 @@ public class MainActivity extends BaseActivity implements
   @Override
   public void onSelected(EventSummary eventSummary) {
 
-    LogUtils.debug(TAG, "++onSelected(EventSummary)");
+    Log.d(TAG, "++onSelected(EventSummary)");
     replaceFragment(CountdownFragment.newInstance(eventSummary));
   }
 
   @Override
   public void onSchedulerFailed() {
 
-    LogUtils.debug(TAG, "++onSchedulerFailed()");
+    Log.d(TAG, "++onSchedulerFailed()");
     Snackbar.make(
       findViewById(R.id.main_fragment_container),
       getString(R.string.err_scheduler_failed),
@@ -268,7 +270,7 @@ public class MainActivity extends BaseActivity implements
 
   private void attemptLogoff() {
 
-    LogUtils.debug(TAG, "++attemptLogoff()");
+    Log.d(TAG, "++attemptLogoff()");
     AlertDialog dialog = new AlertDialog.Builder(this)
       .setMessage(R.string.logout_message)
       .setPositiveButton(android.R.string.yes, (dialog1, which) -> {
@@ -299,7 +301,7 @@ public class MainActivity extends BaseActivity implements
    */
   private void createNotificationChannel() {
 
-    LogUtils.debug(TAG, "++createNotificationChannel()");
+    Log.d(TAG, "++createNotificationChannel()");
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       CharSequence name = getString(R.string.channel_name);
       String description = getString(R.string.channel_description);
@@ -316,48 +318,37 @@ public class MainActivity extends BaseActivity implements
 
   private void getEventList() {
 
-    LogUtils.debug(TAG, "++getEventList()");
+    Log.d(TAG, "++getEventList()");
     mEventSummaries = new HashMap<>();
     FirebaseFirestore db = FirebaseFirestore.getInstance();
     String queryPath = PathUtils.combine(User.ROOT, mUser.Id, EventSummary.ROOT);
-    db.collection(queryPath).get().addOnCompleteListener(task -> {
+    db.collection(queryPath).get().addOnSuccessListener(queryDocumentSnapshots -> {
 
-      if (task.isSuccessful()) {
-        QuerySnapshot querySnapshot = task.getResult();
-        if (querySnapshot != null) {
-          for (DocumentSnapshot snapshot : task.getResult().getDocuments()) {
-            LogUtils.debug(TAG, "New event: " + snapshot.getData());
-            Calendar calendar = Calendar.getInstance();
-            EventSummary summary = snapshot.toObject(EventSummary.class);
-            if (summary != null) {
-              summary.EventId = snapshot.getId();
-              if (!mEventSummaries.containsKey(summary.EventId)) {
-                mEventSummaries.put(summary.EventId, summary);
-                // if (summary.EventDate < calendar.getTimeInMillis()) { // setup alarm
-                  // TODO: setAlarm(summary);
-                //}
-              }
-            }
+      for (DocumentSnapshot snapshot : queryDocumentSnapshots) {
+        Log.d(TAG, "New event: " + snapshot.getData());
+        Calendar calendar = Calendar.getInstance();
+        EventSummary summary = snapshot.toObject(EventSummary.class);
+        if (summary != null) {
+          summary.EventId = snapshot.getId();
+          if (!mEventSummaries.containsKey(summary.EventId)) {
+            mEventSummaries.put(summary.EventId, summary);
+            // if (summary.EventDate < calendar.getTimeInMillis()) { // setup alarm
+            // TODO: setAlarm(summary);
+            //}
           }
-        } else {
-          LogUtils.warn(TAG, "Could not create EventSummary object from data.");
-        }
-      } else {
-        Exception exception = task.getException();
-        if (exception != null) {
-          LogUtils.warn(TAG, "Event query task failed: %s", task.getException().getMessage());
-        } else {
-          LogUtils.warn(TAG, "Event query task failed with no return data.");
         }
       }
 
       replaceFragment(EventListFragment.newInstance(new ArrayList<>(mEventSummaries.values())));
+    }).addOnFailureListener(e ->  {
+      Log.w(TAG, "Event query task failed.", e);
+      replaceFragment(EventListFragment.newInstance(new ArrayList<>()));
     });
   }
 
   private void replaceFragment(Fragment fragment) {
 
-    LogUtils.debug(TAG, "++replaceFragment(Fragment)");
+    Log.d(TAG, "++replaceFragment(Fragment)");
     FragmentManager fragmentManager = getSupportFragmentManager();
     FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
     fragmentTransaction.replace(R.id.main_fragment_container, fragment);
@@ -366,24 +357,25 @@ public class MainActivity extends BaseActivity implements
     }
 
     fragmentTransaction.addToBackStack(fragment.getClass().getName());
-    LogUtils.debug(TAG, "Back stack count: %d", fragmentManager.getBackStackEntryCount());
+    Log.d(TAG, "Back stack count: " + fragmentManager.getBackStackEntryCount());
     fragmentTransaction.commitAllowingStateLoss();
   }
 
   private void setAlarm(EventSummary eventSummary) {
 
-    LogUtils.debug(TAG, "++setAlarm(%s)", eventSummary.toString());
+    Log.d(TAG, "++setAlarm()");
+    Log.d(TAG, "Event=" + eventSummary.toString());
     AlarmManager am = (AlarmManager) MainActivity.this.getSystemService(ALARM_SERVICE);
     Intent broadcastIntent = new Intent("net.frostedbytes.android.countdown.common.AlarmedBroadcastReceiver");
     broadcastIntent.putExtra(BaseActivity.ARG_EVENT_SUMMARY, eventSummary);
     PendingIntent eventAlarm = PendingIntent.getService(MainActivity.this, RC_ALARM, broadcastIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 //    am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, eventSummary.EventDate, eventAlarm);
-    LogUtils.debug(TAG, "Alarm set for %s", eventSummary.EventName);
+    Log.d(TAG, "Alarm set for " + eventSummary.EventName);
   }
 
   private void showDismissableSnackbar(String message) {
 
-    LogUtils.warn(TAG, message);
+    Log.w(TAG, message);
     mSnackbar = Snackbar.make(
       findViewById(R.id.main_fragment_container),
       message,

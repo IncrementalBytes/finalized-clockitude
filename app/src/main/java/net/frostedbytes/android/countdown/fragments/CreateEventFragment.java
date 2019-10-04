@@ -19,6 +19,8 @@ import android.content.Context;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,7 +28,6 @@ import android.widget.Button;
 import android.widget.CalendarView;
 import android.widget.EditText;
 
-import net.frostedbytes.android.common.utils.LogUtils;
 import net.frostedbytes.android.countdown.BaseActivity;
 import net.frostedbytes.android.countdown.R;
 import net.frostedbytes.android.countdown.models.EventSummary;
@@ -58,13 +59,14 @@ public class CreateEventFragment extends Fragment {
 
   public static CreateEventFragment newInstance() {
 
-    LogUtils.debug(TAG, "++newInstance()");
+    Log.d(TAG, "++newInstance()");
     return newInstance(new EventSummary());
   }
 
   public static CreateEventFragment newInstance(EventSummary eventSummary) {
 
-    LogUtils.debug(TAG, "++newInstance(%s)", eventSummary.toString());
+    Log.d(TAG, "++newInstance(EventSummary)");
+    Log.d(TAG, "Event=" + eventSummary.toString());
     CreateEventFragment fragment = new CreateEventFragment();
     Bundle args = new Bundle();
     args.putParcelable(BaseActivity.ARG_EVENT_SUMMARY, eventSummary);
@@ -76,7 +78,7 @@ public class CreateEventFragment extends Fragment {
   public void onAttach(Context context) {
     super.onAttach(context);
 
-    LogUtils.debug(TAG, "++onAttach(Context)");
+    Log.d(TAG, "++onAttach(Context)");
     try {
       mCallback = (OnCreateEventListener) context;
     } catch (ClassCastException e) {
@@ -88,19 +90,19 @@ public class CreateEventFragment extends Fragment {
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    LogUtils.debug(TAG, "++onCreate(Bundle)");
+    Log.d(TAG, "++onCreate(Bundle)");
     Bundle arguments = getArguments();
     if (arguments != null) {
       mEventSummary = arguments.getParcelable(BaseActivity.ARG_EVENT_SUMMARY);
     } else {
-      LogUtils.error(TAG, "Arguments were null.");
+      Log.e(TAG, "Arguments were null.");
     }
   }
 
   @Override
   public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
-    LogUtils.debug(TAG, "++onCreateView(LayoutInflater, ViewGroup, Bundle)");
+    Log.d(TAG, "++onCreateView(LayoutInflater, ViewGroup, Bundle)");
     return inflater.inflate(R.layout.fragment_create, container, false);
   }
 
@@ -108,7 +110,7 @@ public class CreateEventFragment extends Fragment {
   public void onDetach() {
     super.onDetach();
 
-    LogUtils.debug(TAG, "++onDetach()");
+    Log.d(TAG, "++onDetach()");
     mCallback = null;
   }
 
@@ -116,7 +118,7 @@ public class CreateEventFragment extends Fragment {
   public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
     super.onViewCreated(view, savedInstanceState);
 
-    LogUtils.debug(TAG, "++onViewCreated(View, Bundle)");
+    Log.d(TAG, "++onViewCreated(View, Bundle)");
     mNameEditView = view.findViewById(R.id.create_edit_name);
     EditText mTimeEditView = view.findViewById(R.id.create_edit_time);
     CalendarView calendarView = view.findViewById(R.id.create_calendar_date);

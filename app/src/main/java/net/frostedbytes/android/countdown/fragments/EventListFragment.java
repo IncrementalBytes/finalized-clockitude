@@ -22,6 +22,8 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,7 +31,6 @@ import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import net.frostedbytes.android.common.utils.LogUtils;
 import net.frostedbytes.android.common.utils.TimeUtils;
 import net.frostedbytes.android.countdown.BaseActivity;
 import net.frostedbytes.android.countdown.R;
@@ -64,7 +65,8 @@ public class EventListFragment extends Fragment {
 
   public static EventListFragment newInstance(ArrayList<EventSummary> eventSummaries) {
 
-    LogUtils.debug(TAG, "++newInstance(%d)", eventSummaries.size());
+    Log.d(TAG, "++newInstance(ArrayList<EventSummary>)");
+    Log.d(TAG, "Size=" + eventSummaries.size());
     EventListFragment fragment = new EventListFragment();
     Bundle args = new Bundle();
     args.putParcelableArrayList(BaseActivity.ARG_EVENT_SUMMARIES, eventSummaries);
@@ -76,7 +78,7 @@ public class EventListFragment extends Fragment {
   public void onAttach(Context context) {
     super.onAttach(context);
 
-    LogUtils.debug(TAG, "++onAttach(Context)");
+    Log.d(TAG, "++onAttach(Context)");
     try {
       mCallback = (OnEventListListener) context;
     } catch (ClassCastException e) {
@@ -88,19 +90,19 @@ public class EventListFragment extends Fragment {
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    LogUtils.debug(TAG, "++onCreate(Bundle)");
+    Log.d(TAG, "++onCreate(Bundle)");
     Bundle arguments = getArguments();
     if (arguments != null) {
       mEventSummaries = arguments.getParcelableArrayList(BaseActivity.ARG_EVENT_SUMMARIES);
     } else {
-      LogUtils.error(TAG, "Arguments were null.");
+      Log.e(TAG, "Arguments were null.");
     }
   }
 
   @Override
   public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
-    LogUtils.debug(TAG, "++onCreateView(LayoutInflater, ViewGroup, Bundle)");
+    Log.d(TAG, "++onCreateView(LayoutInflater, ViewGroup, Bundle)");
     return inflater.inflate(R.layout.fragment_event_list, container, false);
   }
 
@@ -108,7 +110,7 @@ public class EventListFragment extends Fragment {
   public void onDestroy() {
     super.onDestroy();
 
-    LogUtils.debug(TAG, "++onDestroy()");
+    Log.d(TAG, "++onDestroy()");
     mCallback = null;
   }
 
@@ -116,7 +118,7 @@ public class EventListFragment extends Fragment {
   public void onDetach() {
     super.onDetach();
 
-    LogUtils.debug(TAG, "++onDetach()");
+    Log.d(TAG, "++onDetach()");
     mCallback = null;
   }
 
@@ -124,7 +126,7 @@ public class EventListFragment extends Fragment {
   public void onResume() {
     super.onResume();
 
-    LogUtils.debug(TAG, "++onResume()");
+    Log.d(TAG, "++onResume()");
     updateUI();
   }
 
@@ -132,7 +134,7 @@ public class EventListFragment extends Fragment {
   public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
     super.onViewCreated(view, savedInstanceState);
 
-    LogUtils.debug(TAG, "++onViewCreated(View, Bundle)");
+    Log.d(TAG, "++onViewCreated(View, Bundle)");
     mRecyclerView = view.findViewById(R.id.event_list_view_events);
     final LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getActivity());
     mRecyclerView.setLayoutManager(linearLayoutManager);
@@ -158,7 +160,7 @@ public class EventListFragment extends Fragment {
    */
   private void updateUI() {
 
-    LogUtils.debug(TAG, "++updateUI()");
+    Log.d(TAG, "++updateUI()");
     if (mEventSummaries != null && mEventSummaries.size() > 0) {
       EventSummaryAdapter eventAdapter = new EventSummaryAdapter(mEventSummaries);
       mRecyclerView.setAdapter(eventAdapter);
@@ -240,7 +242,7 @@ public class EventListFragment extends Fragment {
     @Override
     public void onClick(View view) {
 
-      LogUtils.debug(TAG, "++MatchSummaryHolder::onClick(View)");
+      Log.d(TAG, "++MatchSummaryHolder::onClick(View)");
       mCallback.onSelected(mEventSummary);
     }
   }

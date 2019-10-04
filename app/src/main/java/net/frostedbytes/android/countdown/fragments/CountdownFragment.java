@@ -19,6 +19,8 @@ import android.content.Context;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,7 +28,6 @@ import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import net.frostedbytes.android.common.utils.LogUtils;
 import net.frostedbytes.android.common.utils.TimeUtils;
 import net.frostedbytes.android.countdown.BaseActivity;
 import net.frostedbytes.android.countdown.R;
@@ -65,7 +66,8 @@ public class CountdownFragment extends Fragment {
 
   public static CountdownFragment newInstance(EventSummary eventSummary) {
 
-    LogUtils.debug(TAG, "++newInstance(EventSummary)");
+    Log.d(TAG, "++newInstance(EventSummary)");
+    Log.d(TAG, "Event=" + eventSummary.toString());
     CountdownFragment fragment = new CountdownFragment();
     Bundle args = new Bundle();
     args.putParcelable(BaseActivity.ARG_EVENT_SUMMARY, eventSummary);
@@ -77,7 +79,7 @@ public class CountdownFragment extends Fragment {
   public void onAttach(Context context) {
     super.onAttach(context);
 
-    LogUtils.debug(TAG, "++onAttach(Context)");
+    Log.d(TAG, "++onAttach(Context)");
     try {
       mCallback = (OnCountdownListener) context;
     } catch (ClassCastException e) {
@@ -89,19 +91,19 @@ public class CountdownFragment extends Fragment {
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    LogUtils.debug(TAG, "++onCreate(Bundle)");
+    Log.d(TAG, "++onCreate(Bundle)");
     Bundle arguments = getArguments();
     if (arguments != null) {
       mEventSummary = arguments.getParcelable(BaseActivity.ARG_EVENT_SUMMARY);
     } else {
-      LogUtils.error(TAG, "Arguments were null.");
+      Log.e(TAG, "Arguments were null.");
     }
   }
 
   @Override
   public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
-    LogUtils.debug(TAG, "++onCreateView(LayoutInflater, ViewGroup, Bundle)");
+    Log.d(TAG, "++onCreateView(LayoutInflater, ViewGroup, Bundle)");
     return inflater.inflate(R.layout.fragment_countdown, container, false);
   }
 
@@ -109,11 +111,11 @@ public class CountdownFragment extends Fragment {
   public void onDestroy() {
     super.onDestroy();
 
-    LogUtils.debug(TAG, "++onDestroy()");
+    Log.d(TAG, "++onDestroy()");
     if (mScheduler != null) {
       mScheduler.shutdown();
       mScheduler = null;
-      LogUtils.debug(TAG, "Scheduler shutdown!");
+      Log.d(TAG, "Scheduler shutdown!");
     }
   }
 
@@ -121,7 +123,7 @@ public class CountdownFragment extends Fragment {
   public void onDetach() {
     super.onDetach();
 
-    LogUtils.debug(TAG, "++onDetach()");
+    Log.d(TAG, "++onDetach()");
     mCallback = null;
   }
 
@@ -129,14 +131,14 @@ public class CountdownFragment extends Fragment {
   public void onResume() {
     super.onResume();
 
-    LogUtils.debug(TAG, "++onResume()");
+    Log.d(TAG, "++onResume()");
   }
 
   @Override
   public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
     super.onViewCreated(view, savedInstanceState);
 
-    LogUtils.debug(TAG, "++onViewCreated(View, Bundle)");
+    Log.d(TAG, "++onViewCreated(View, Bundle)");
     TextView title = view.findViewById(R.id.countdown_text_title);
     title.setText(mEventSummary.EventName);
     TextView date = view.findViewById(R.id.countdown_text_date);
@@ -157,7 +159,7 @@ public class CountdownFragment extends Fragment {
 
     mTaskScheduled = BaseActivity.ONE_MINUTE; // update every minute
     if ((mEventSummary.EventDate - Calendar.getInstance().getTimeInMillis()) < BaseActivity.ONE_DAY) {
-      LogUtils.debug(TAG, "Within a day of the event; setting schedule to 1 second.");
+      Log.d(TAG, "Within a day of the event; setting schedule to 1 second.");
       mTaskScheduled = BaseActivity.ONE_SECOND; // update every second
     }
 
@@ -175,7 +177,7 @@ public class CountdownFragment extends Fragment {
 //              mCallback.onSchedulerFailed();
 //            }
 //          } catch (Exception ex) {
-//            LogUtils.warn(TAG, "Exception when scheduling thread: %s", ex.getMessage());
+//            Log.warn(TAG, "Exception when scheduling thread.", ex.getMessage());
 //          }
 //        }
 //      },
@@ -191,7 +193,7 @@ public class CountdownFragment extends Fragment {
   private void updateUI() {
 
     if (mTaskScheduled == BaseActivity.ONE_MINUTE) {
-      LogUtils.debug(TAG, "++updateUI()");
+      Log.d(TAG, "++updateUI()");
     }
 
     SimpleDateFormat simpleDateFormat = new SimpleDateFormat(getString(R.string.date_format), Locale.US);
@@ -227,7 +229,7 @@ public class CountdownFragment extends Fragment {
         if (mScheduler != null) {
           mScheduler.shutdown();
           mScheduler = null;
-          LogUtils.debug(TAG, "Scheduler shutdown!");
+          Log.d(TAG, "Scheduler shutdown!");
         }
 
         mRemainingDaysEdit.setText(getString(R.string.complete));
@@ -235,7 +237,7 @@ public class CountdownFragment extends Fragment {
         mProgressText.setText(getString(R.string.one_hundred_percent));
       }
     } catch (Exception pe) {
-      LogUtils.warn(TAG, pe.getMessage());
+      Log.w(TAG, pe);
       mRemainingDaysEdit.setText(getString(R.string.unknown));
       mRemainingTimeEdit.setText(getString(R.string.unknown));
     }

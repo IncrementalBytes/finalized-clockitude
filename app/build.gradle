@@ -97,7 +97,7 @@ dependencies {
     // Google
     implementation 'com.google.android.gms:play-services-auth:17.0.0'
     // Firebase
-    implementation 'com.google.firebase:firebase-auth:19.0.0'
+    implementation 'com.google.firebase:firebase-auth:19.1.0'
     implementation 'com.google.firebase:firebase-core:17.2.0'
     implementation 'com.google.firebase:firebase-database:19.1.0'
     implementation 'com.google.firebase:firebase-firestore:21.1.1'
@@ -107,7 +107,7 @@ dependencies {
 
     implementation 'joda-time:joda-time:2.9.4'
 
-    implementation 'com.github.IncrementalBytes:common-droid:1.0.3'
+    implementation 'com.github.IncrementalBytes:common-droid:1.0.4'
 
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test:runner:1.2.0'
